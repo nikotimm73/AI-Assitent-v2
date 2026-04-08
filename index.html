@@ -1196,7 +1196,7 @@ function ADACAssistant() {
     }
 
     // ── Chip deleted → re-show carousel (legacy) ──
-    if (/anderes modell|zurück|nochmal|andere wahl|caroussel|auswahl/i.test(txt)) {
+    if (/zurück zur auswahl|nochmal die auswahl|caroussel|bisherige auswahl/i.test(txt)) {
       if (lastCars.length > 0) {
         showCarousel(lastCars, "Hier nochmal die Modellauswahl – wähle ein anderes Fahrzeug:", {brand:ctx.brand, fuel:ctx.fuel, compareActive:selectedIds.length>0});
         return;
@@ -1292,7 +1292,7 @@ function ADACAssistant() {
     }
 
     // ── Suche verfeinern (wenn User mit Ergebnissen nicht zufrieden ist) ──
-    if (/andere modelle|andere vorschläge|passt nicht|nicht zufrieden|gefällt.*nicht|suche verfeinern|genauer suchen|bessere ergebnisse|nochmal filtern/i.test(txt) && (curStep === "results" || curStep === "detail" || lastCars.length > 0)) {
+    if (/andere.?modell|andere vorschläge|andere.?auto|andere.?fahrzeug|mehr auswahl|passt nicht|nicht zufrieden|gefällt.*nicht|suche verfeinern|genauer suchen|bessere ergebnisse|nochmal filtern|andere.?anzeig/i.test(txt) && (curStep === "results" || curStep === "detail" || lastCars.length > 0)) {
       setStep("refine_pick");
       addBot({
         text:"Kein Problem! Ich kann die Suche gezielt verfeinern. Welches Kriterium möchtest du anpassen?",
