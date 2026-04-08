@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADAC KI-Assistent – Prototype V2</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.2/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useRef, useEffect, useCallback } = React;
+
+/* ═══════════════════════════════════════════════════════════════════
+   CAR DATABASE
+═══════════════════════════════════════════════════════════════════ */
+const CAR_DB = [
+  { id:1,  name:"Skoda Enyaq",          gen:"1. Generation", code:"NY",   years:"2021–2024", price:"ab 34.600 €", priceNum:34600, fuel:"Strom",        cons:"14,9–17,7 kWh",  range:"355–578 km",   type:"SUV",   fuelType:"elektro", brand:"Skoda",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/2021_Skoda_Enyaq_IV_80_Loft_Front.jpg",    ausstattung:["Klimaanlage","Navigationssystem","Isofix","Spurhalteassistent","Notbremsassistent","LED-Scheinwerfer","Rückfahrkamera","Sitzheizung"] },
+  { id:2,  name:"Tesla Model Y",         gen:"1. Generation", code:"003",  years:"2025",      price:"ab 39.990 €", priceNum:39990, fuel:"Strom",        cons:"12,7–16,2 kWh",  range:"500–657 km",   type:"SUV",   fuelType:"elektro", brand:"Tesla",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/Tesla_Model_Y_silver_orange.jpg",           ausstattung:["Autopilot","15-Zoll-Touchscreen","Wärmepumpe","Panoramadach","Isofix","Over-the-Air-Updates","Dashcam","Notbremsassistent"] },
+  { id:3,  name:"XPeng G6",              gen:"1. Generation", code:"F30",  years:"2024–2025", price:"ab 43.600 €", priceNum:43600, fuel:"Strom",        cons:"17,3–18,4 kWh",  range:"435–570 km",   type:"SUV",   fuelType:"elektro", brand:"XPeng",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/XPeng_G6.jpg",                              ausstattung:["Panoramadach","XPILOT-Assistenz","OTA-Updates","Wärmepumpe","Isofix","LED-Scheinwerfer","Rückfahrkamera"] },
+  { id:4,  name:"VW ID.4",               gen:"1. Generation", code:"E21",  years:"2020–2025", price:"ab 37.900 €", priceNum:37900, fuel:"Strom",        cons:"16,2–19,5 kWh",  range:"340–530 km",   type:"SUV",   fuelType:"elektro", brand:"VW",       img:"https://commons.wikimedia.org/wiki/Special:FilePath/2021_VW_ID.4_1X7A9754.jpg",                ausstattung:["Klimaanlage","Navigationssystem","Isofix","Spurhalteassistent","LED-Scheinwerfer","Rückfahrkamera","Sitzheizung","Park-Pilot"] },
+  { id:5,  name:"Hyundai IONIQ 5",       gen:"1. Generation", code:"NE",   years:"2021–2024", price:"ab 41.900 €", priceNum:41900, fuel:"Strom",        cons:"15,5–19,0 kWh",  range:"350–507 km",   type:"SUV",   fuelType:"elektro", brand:"Hyundai",  img:"https://commons.wikimedia.org/wiki/Special:FilePath/2022_Hyundai_IONIQ_5_AWD,_front_8.21.22.jpg", ausstattung:["V2L-Funktion","Panoramadach","Isofix","Sitzheizung","Head-up-Display","Navigationssystem","Notbremsassistent"] },
+  { id:6,  name:"BMW iX1",               gen:"1. Generation", code:"U11",  years:"2022–2025", price:"ab 44.500 €", priceNum:44500, fuel:"Strom",        cons:"16,7–18,2 kWh",  range:"388–449 km",   type:"SUV",   fuelType:"elektro", brand:"BMW",      img:"https://commons.wikimedia.org/wiki/Special:FilePath/2023_BMW_iX1_xDrive30,_front_9.14.22.jpg",  ausstattung:["Panoramadach","iDrive","Harman-Kardon","Sitzheizung","Isofix","Spurhalteassistent","Head-up-Display"] },
+  { id:7,  name:"VW Tiguan",             gen:"3. Generation", code:"BW2",  years:"2024–2025", price:"ab 35.900 €", priceNum:35900, fuel:"Benzin",       cons:"6,5–8,2 l/100km", range:"650–820 km",  type:"SUV",   fuelType:"benzin",  brand:"VW",       img:"https://commons.wikimedia.org/wiki/Special:FilePath/VW_Tiguan_Allspace_2017.jpg",              ausstattung:["Klimaanlage","Navigationssystem","Isofix","Spurhalteassistent","LED-Scheinwerfer","Rückfahrkamera","Sitzheizung","Anhängerkupplung"] },
+  { id:8,  name:"Toyota RAV4",           gen:"5. Generation", code:"XA5",  years:"2018–2025", price:"ab 36.990 €", priceNum:36990, fuel:"Benzin",       cons:"7,2–8,8 l/100km", range:"600–740 km",  type:"SUV",   fuelType:"benzin",  brand:"Toyota",   img:"https://commons.wikimedia.org/wiki/Special:FilePath/2019_Toyota_RAV4_XLE_AWD,_front_12.21.19.jpg", ausstattung:["Allradantrieb","Klimaanlage","Isofix","Spurhalteassistent","LED-Scheinwerfer","Rückfahrkamera","Sitzheizung"] },
+  { id:9,  name:"Ford Kuga",             gen:"3. Generation", code:"CX4",  years:"2019–2024", price:"ab 28.500 €", priceNum:28500, fuel:"Benzin",       cons:"6,0–7,8 l/100km", range:"680–880 km",  type:"SUV",   fuelType:"benzin",  brand:"Ford",     img:"https://commons.wikimedia.org/wiki/Special:FilePath/Ford_Kuga_III_IMG_4216.jpg",               ausstattung:["Klimaanlage","Isofix","Spurhalteassistent","LED-Scheinwerfer","Rückfahrkamera","Sitzheizung","Park-Pilot"] },
+  { id:10, name:"BMW X3",                gen:"3. Generation", code:"G01",  years:"2017–2024", price:"ab 43.900 €", priceNum:43900, fuel:"Diesel",       cons:"5,2–6,8 l/100km", range:"820–1080 km", type:"SUV",   fuelType:"diesel",  brand:"BMW",      img:"https://commons.wikimedia.org/wiki/Special:FilePath/2018_BMW_X3_xDrive20d_SE_Automatic_2.0_(32573277778).jpg", ausstattung:["Panoramadach","iDrive","Sitzheizung","Isofix","Spurhalteassistent","Head-up-Display","Anhängerkupplung","Harman-Kardon"] },
+  { id:11, name:"Mercedes GLC",          gen:"2. Generation", code:"X254", years:"2022–2025", price:"ab 52.600 €", priceNum:52600, fuel:"Diesel",       cons:"5,1–6,5 l/100km", range:"870–1100 km", type:"SUV",   fuelType:"diesel",  brand:"Mercedes", img:"https://commons.wikimedia.org/wiki/Special:FilePath/Mercedes-Benz_GLC_300_4MATIC_Coupe_(X253)_–_front_view.jpg", ausstattung:["MBUX-Infotainment","Panoramadach","Sitzheizung","Isofix","Spurhalteassistent","Head-up-Display","360°-Kamera"] },
+  { id:12, name:"Toyota RAV4 Hybrid",    gen:"5. Generation", code:"XA5H", years:"2018–2025", price:"ab 41.490 €", priceNum:41490, fuel:"Hybrid",       cons:"5,0–6,2 l/100km", range:"830–1030 km", type:"SUV",   fuelType:"hybrid",  brand:"Toyota",   img:"https://commons.wikimedia.org/wiki/Special:FilePath/2019_Toyota_RAV4_Hybrid_XSE_AWD_in_Silver_at_SXSW_2019.jpg", ausstattung:["Allradantrieb","Klimaanlage","Isofix","Spurhalteassistent","LED-Scheinwerfer","Rückfahrkamera"] },
+  { id:13, name:"Kia Sportage Hybrid",   gen:"5. Generation", code:"NQ5",  years:"2021–2025", price:"ab 33.990 €", priceNum:33990, fuel:"Hybrid",       cons:"5,4–6,7 l/100km", range:"820–1020 km", type:"SUV",   fuelType:"hybrid",  brand:"Kia",      img:"https://commons.wikimedia.org/wiki/Special:FilePath/Kia_Sportage_Mk5_IMG_5367.jpg",            ausstattung:["Panoramadach","Isofix","Spurhalteassistent","LED-Scheinwerfer","Rückfahrkamera","Sitzheizung"] },
+  { id:14, name:"VW Passat Variant",     gen:"9. Generation", code:"BN",   years:"2023–2025", price:"ab 37.800 €", priceNum:37800, fuel:"Benzin",       cons:"6,4–7,8 l/100km", range:"700–860 km",  type:"Kombi", fuelType:"benzin",  brand:"VW",       img:"https://commons.wikimedia.org/wiki/Special:FilePath/VW_Passat_Variant_B8_Facelift_IMG_3762.jpg", ausstattung:["Klimaanlage","Navigationssystem","Isofix","Spurhalteassistent","LED-Scheinwerfer","Anhängerkupplung"] },
+  { id:15, name:"Skoda Octavia Combi",   gen:"4. Generation", code:"NX5",  years:"2020–2025", price:"ab 24.900 €", priceNum:24900, fuel:"Benzin",       cons:"5,6–7,1 l/100km", range:"760–970 km",  type:"Kombi", fuelType:"benzin",  brand:"Skoda",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/Skoda_Octavia_Combi_IV_IMG_2497.jpg",     ausstattung:["Klimaanlage","Isofix","Spurhalteassistent","LED-Scheinwerfer","Rückfahrkamera"] },
+  { id:16, name:"BMW 3er Touring",       gen:"7. Generation", code:"G21",  years:"2019–2025", price:"ab 38.900 €", priceNum:38900, fuel:"Diesel",       cons:"4,8–6,0 l/100km", range:"910–1140 km", type:"Kombi", fuelType:"diesel",  brand:"BMW",      img:"https://commons.wikimedia.org/wiki/Special:FilePath/2019_BMW_320d_Touring.jpg",               ausstattung:["Panoramadach","iDrive","Sitzheizung","Isofix","Spurhalteassistent","Head-up-Display"] },
+  { id:17, name:"Volvo V60",             gen:"2. Generation", code:"ZW",   years:"2018–2025", price:"ab 42.900 €", priceNum:42900, fuel:"Diesel",       cons:"4,6–5,8 l/100km", range:"940–1180 km", type:"Kombi", fuelType:"diesel",  brand:"Volvo",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/Volvo_V60_D5_AWD_Inscription_–_Frontansicht,_24._Juni_2017,_Düsseldorf.jpg", ausstattung:["Tempomat","Abstandsregelung","Airbag","Alufelgen","Anti-Blockier-System","Berganfahrhilfe","Bremsassistent","Parkhilfe","Fernlichtassistent","Fußgängererkennung","Head-up-Display","Isofix","Klimaanlage","Lederausstattung","Metallic-Lackierung","Navigationssystem","Park-Lenkassistent","Servolenkung","Spurhalteassistent","Spurwechselassistent","Start-/Stop Automatik","Stauassistent","Verkehrsschild-Erkennung"] },
+  { id:18, name:"Volvo XC40",            gen:"1. Generation", code:"536",  years:"2018–2025", price:"ab 36.900 €", priceNum:36900, fuel:"Benzin",       cons:"6,4–8,0 l/100km", range:"620–780 km",  type:"SUV",   fuelType:"benzin",  brand:"Volvo",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/2018_Volvo_XC40_First_Edition_T5_AWD_front_4.28.18.jpg", ausstattung:["Klimaanlage","Navigationssystem","Isofix","Spurhalteassistent","Sitzheizung","LED-Scheinwerfer","Rückfahrkamera","Tempomat"] },
+  { id:19, name:"Volvo XC40 Recharge",   gen:"1. Generation", code:"536E", years:"2020–2025", price:"ab 47.900 €", priceNum:47900, fuel:"Strom",        cons:"17,5–20,0 kWh",  range:"400–530 km",  type:"SUV",   fuelType:"elektro", brand:"Volvo",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/Volvo_C40_Recharge_IMG_4989.jpg", ausstattung:["Klimaanlage","Navigationssystem","Isofix","Spurhalteassistent","Sitzheizung","LED-Scheinwerfer","Rückfahrkamera","Google-Integration","OTA-Updates"] },
+  { id:20, name:"Volvo XC60",            gen:"2. Generation", code:"246",  years:"2017–2025", price:"ab 48.800 €", priceNum:48800, fuel:"Diesel",       cons:"5,0–6,5 l/100km", range:"870–1130 km", type:"SUV",   fuelType:"diesel",  brand:"Volvo",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/Volvo_V60_D5_AWD_Inscription_–_Frontansicht,_24._Juni_2017,_Düsseldorf.jpg", ausstattung:["Panoramadach","Bowers-&-Wilkins-Audio","Sitzheizung","Isofix","Spurhalteassistent","Head-up-Display","Anhängerkupplung","360°-Kamera","Lederausstattung"] },
+  { id:21, name:"Volvo XC60 Recharge",   gen:"2. Generation", code:"246E", years:"2018–2025", price:"ab 58.900 €", priceNum:58900, fuel:"Hybrid",       cons:"1,6–2,4 l/100km", range:"73–1200 km",  type:"SUV",   fuelType:"hybrid",  brand:"Volvo",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/2018_Volvo_XC60_2.0.jpg", ausstattung:["Panoramadach","Plug-in-Hybrid","Bowers-&-Wilkins-Audio","Sitzheizung","Isofix","Spurhalteassistent","Head-up-Display","360°-Kamera"] },
+  { id:22, name:"Volvo XC90",            gen:"2. Generation", code:"256",  years:"2015–2025", price:"ab 68.900 €", priceNum:68900, fuel:"Diesel",       cons:"5,2–7,0 l/100km", range:"810–1080 km", type:"SUV",   fuelType:"diesel",  brand:"Volvo",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/2015_Volvo_XC90_T6_AWD_Inscription,_front_9.7.19.jpg", ausstattung:["7 Sitze","Panoramadach","Bowers-&-Wilkins-Audio","Sitzheizung","Isofix","Spurhalteassistent","Head-up-Display","Anhängerkupplung","Lederausstattung","360°-Kamera"] },
+  { id:23, name:"Volvo XC90 Recharge",   gen:"2. Generation", code:"256E", years:"2016–2025", price:"ab 79.900 €", priceNum:79900, fuel:"Hybrid",       cons:"1,4–2,6 l/100km", range:"50–1300 km",  type:"SUV",   fuelType:"hybrid",  brand:"Volvo",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/2015_Volvo_XC90_T6_AWD_Inscription,_front_9.7.19.jpg", ausstattung:["7 Sitze","Plug-in-Hybrid","Panoramadach","Bowers-&-Wilkins-Audio","Isofix","Head-up-Display","360°-Kamera","Lederausstattung"] },
+  { id:24, name:"Volvo EX30",            gen:"1. Generation", code:"EX30", years:"2023–2025", price:"ab 34.900 €", priceNum:34900, fuel:"Strom",        cons:"14,6–17,3 kWh",  range:"344–480 km",  type:"SUV",   fuelType:"elektro", brand:"Volvo",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/Volvo_EX30,_IAA_2023,_München_(1X7A4541).jpg", ausstattung:["Google-Integration","OTA-Updates","Isofix","Spurhalteassistent","LED-Scheinwerfer","Rückfahrkamera","Sitzheizung"] },
+  { id:25, name:"Volvo EX40",            gen:"1. Generation", code:"EX40", years:"2024–2025", price:"ab 47.900 €", priceNum:47900, fuel:"Strom",        cons:"16,8–19,5 kWh",  range:"400–530 km",  type:"SUV",   fuelType:"elektro", brand:"Volvo",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/2018_Volvo_XC40_First_Edition_T5_AWD_front_4.28.18.jpg", ausstattung:["Google-Integration","OTA-Updates","Panoramadach","Isofix","Spurhalteassistent","LED-Scheinwerfer","Sitzheizung","Rückfahrkamera"] },
+  { id:26, name:"Volvo EX90",            gen:"1. Generation", code:"EX90", years:"2024–2025", price:"ab 89.900 €", priceNum:89900, fuel:"Strom",        cons:"19,0–22,0 kWh",  range:"550–600 km",  type:"SUV",   fuelType:"elektro", brand:"Volvo",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/2015_Volvo_XC90_T6_AWD_Inscription,_front_9.7.19.jpg", ausstattung:["7 Sitze","Google-Integration","Dolby-Atmos-Audio","OTA-Updates","Panoramadach","Isofix","Head-up-Display","360°-Kamera"] },
+  { id:27, name:"VW Touran",             gen:"2. Generation", code:"5T",   years:"2015–2025", price:"ab 29.990 €", priceNum:29990, fuel:"Benzin",       cons:"6,2–7,5 l/100km", range:"730–885 km",  type:"Van",   fuelType:"benzin",  brand:"VW",       img:"https://commons.wikimedia.org/wiki/Special:FilePath/VW_Touran_5T_Facelift_IMG_2001.jpg",  ausstattung:["7 Sitze","Klimaanlage","Isofix","Spurhalteassistent","LED-Scheinwerfer","Rückfahrkamera"] },
+  { id:28, name:"Renault Scenic E-Tech", gen:"5. Generation", code:"JA",   years:"2023–2025", price:"ab 33.990 €", priceNum:33990, fuel:"Strom",        cons:"14,0–17,0 kWh",  range:"430–620 km",  type:"Van",   fuelType:"elektro", brand:"Renault",  img:"https://commons.wikimedia.org/wiki/Special:FilePath/Renault_Scenic_5_2022.jpg",             ausstattung:["Klimaanlage","Navigationssystem","Isofix","Spurhalteassistent","LED-Scheinwerfer"] },
+  { id:29, name:"Volvo C40 Recharge",   gen:"1. Generation", code:"C40",  years:"2021–2025", price:"ab 46.500 €", priceNum:46500, fuel:"Strom",        cons:"16,3–19,2 kWh",  range:"403–507 km",  type:"SUV",   fuelType:"elektro", brand:"Volvo",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/Volvo_C40_Recharge_IMG_4989.jpg",       ausstattung:["Google-Integration","Panoramadach","OTA-Updates","Isofix","Spurhalteassistent","LED-Scheinwerfer","Sitzheizung","Harman-Kardon"] },
+  { id:30, name:"Volvo XC40 T4",        gen:"1. Generation", code:"536T4",years:"2018–2025", price:"ab 39.900 €", priceNum:39900, fuel:"Benzin",       cons:"6,8–8,5 l/100km", range:"580–720 km",  type:"SUV",   fuelType:"benzin",  brand:"Volvo",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/2018_Volvo_XC40_First_Edition_T5_AWD_front_4.28.18.jpg", ausstattung:["Klimaanlage","Navigationssystem","Isofix","Spurhalteassistent","Sitzheizung","LED-Scheinwerfer","Rückfahrkamera","Harman-Kardon"] },
+  { id:31, name:"Volvo XC40 T5",        gen:"1. Generation", code:"536T5",years:"2018–2025", price:"ab 43.200 €", priceNum:43200, fuel:"Benzin",       cons:"7,1–8,9 l/100km", range:"560–700 km",  type:"SUV",   fuelType:"benzin",  brand:"Volvo",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/2018_Volvo_XC40_First_Edition_T5_AWD_front_4.28.18.jpg", ausstattung:["Allradantrieb","Klimaanlage","Navigationssystem","Isofix","Spurhalteassistent","Sitzheizung","LED-Scheinwerfer","Panoramadach","Harman-Kardon"] },
+  { id:32, name:"Volvo V90",            gen:"2. Generation", code:"235",  years:"2016–2025", price:"ab 49.900 €", priceNum:49900, fuel:"Diesel",       cons:"4,8–6,2 l/100km", range:"900–1150 km", type:"Kombi", fuelType:"diesel",  brand:"Volvo",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/Volvo_V90_D5_AWD_Inscription_–_Frontansicht,_24._Juni_2017,_Düsseldorf.jpg", ausstattung:["Panoramadach","Bowers-&-Wilkins-Audio","Sitzheizung","Lederausstattung","Isofix","Spurhalteassistent","Head-up-Display","Anhängerkupplung","360°-Kamera"] },
+  { id:33, name:"Volvo V90 Cross Country",gen:"2. Generation",code:"235CC",years:"2017–2025",price:"ab 52.800 €", priceNum:52800, fuel:"Diesel",       cons:"5,2–6,8 l/100km", range:"850–1080 km", type:"Kombi", fuelType:"diesel",  brand:"Volvo",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/2018_Volvo_V90_Cross_Country_D5_PowerPulse_AWD_2.0_Front.jpg", ausstattung:["Allradantrieb","Offroad-Modus","Panoramadach","Sitzheizung","Lederausstattung","Isofix","Spurhalteassistent","Head-up-Display"] },
+  { id:34, name:"Volvo S60",            gen:"3. Generation", code:"225",  years:"2018–2025", price:"ab 41.900 €", priceNum:41900, fuel:"Benzin",       cons:"6,2–7,8 l/100km", range:"650–820 km",  type:"SUV",   fuelType:"benzin",  brand:"Volvo",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/2019_Volvo_S60_T6_Inscription_AWD,_front_10.25.19.jpg", ausstattung:["Klimaanlage","Navigationssystem","Sitzheizung","Isofix","Spurhalteassistent","LED-Scheinwerfer","Rückfahrkamera","Lederausstattung"] },
+  { id:35, name:"Volvo XC60 T6",        gen:"2. Generation", code:"246T6",years:"2017–2025", price:"ab 49.500 €", priceNum:49500, fuel:"Benzin",       cons:"7,5–9,2 l/100km", range:"550–720 km",  type:"SUV",   fuelType:"benzin",  brand:"Volvo",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/2018_Volvo_XC60_2.0.jpg",                ausstattung:["Allradantrieb","Panoramadach","Bowers-&-Wilkins-Audio","Sitzheizung","Lederausstattung","Isofix","Spurhalteassistent","Head-up-Display","360°-Kamera"] },
+  { id:36, name:"Volvo XC40 Mild-Hybrid",gen:"1. Generation",code:"536MH",years:"2020–2025",price:"ab 38.500 €", priceNum:38500, fuel:"Hybrid",       cons:"5,8–7,2 l/100km", range:"680–850 km",  type:"SUV",   fuelType:"hybrid",  brand:"Volvo",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/2018_Volvo_XC40_First_Edition_T5_AWD_front_4.28.18.jpg", ausstattung:["Mild-Hybrid-Antrieb","Klimaanlage","Navigationssystem","Isofix","Spurhalteassistent","Sitzheizung","LED-Scheinwerfer","Rückfahrkamera"] },
+  { id:37, name:"Volvo XC60 T5",        gen:"2. Generation", code:"246T5",years:"2017–2025", price:"ab 44.200 €", priceNum:44200, fuel:"Benzin",       cons:"6,8–8,4 l/100km", range:"600–780 km",  type:"SUV",   fuelType:"benzin",  brand:"Volvo",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/2018_Volvo_XC60_2.0.jpg",                ausstattung:["Klimaanlage","Navigationssystem","Sitzheizung","Isofix","Spurhalteassistent","LED-Scheinwerfer","Rückfahrkamera","Park-Pilot"] },
+  { id:38, name:"Volvo XC40 T3",        gen:"1. Generation", code:"536T3",years:"2018–2024", price:"ab 35.200 €", priceNum:35200, fuel:"Benzin",       cons:"6,2–7,6 l/100km", range:"640–800 km",  type:"SUV",   fuelType:"benzin",  brand:"Volvo",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/2018_Volvo_XC40_First_Edition_T5_AWD_front_4.28.18.jpg", ausstattung:["Klimaanlage","Isofix","Spurhalteassistent","LED-Scheinwerfer","Rückfahrkamera","Tempomat","Sitzheizung"] },
+  { id:39, name:"Volvo XC90 T5",        gen:"2. Generation", code:"256T5",years:"2015–2025", price:"ab 47.800 €", priceNum:47800, fuel:"Benzin",       cons:"7,8–9,5 l/100km", range:"530–680 km",  type:"SUV",   fuelType:"benzin",  brand:"Volvo",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/2015_Volvo_XC90_T6_AWD_Inscription,_front_9.7.19.jpg", ausstattung:["7 Sitze","Panoramadach","Sitzheizung","Lederausstattung","Isofix","Spurhalteassistent","Anhängerkupplung","360°-Kamera"] },
+];
+
+const PRICE_RANGES = {
+  "Unter 20.000 €":      {min:0,     max:20000},
+  "20.000 € – 35.000 €": {min:20000, max:35000},
+  "35.000 € – 50.000 €": {min:35000, max:50000},
+  "Über 50.000 €":       {min:50000, max:999999},
+};
+
+const BRANDS = [
+  {re:/\bvolvo\b/i,    name:"Volvo"},   {re:/\bbmw\b/i,          name:"BMW"},
+  {re:/\bskoda\b|škoda/i,name:"Skoda"},{re:/\btesla\b/i,         name:"Tesla"},
+  {re:/\bvw\b|\bvolkswagen\b/i,name:"VW"},{re:/\bhyundai\b/i,   name:"Hyundai"},
+  {re:/\btoyota\b/i,   name:"Toyota"}, {re:/\bford\b/i,          name:"Ford"},
+  {re:/\bmercedes\b/i, name:"Mercedes"},{re:/\bkia\b/i,          name:"Kia"},
+  {re:/\brenault\b/i,  name:"Renault"},{re:/\bxpeng\b/i,         name:"XPeng"},
+  {re:/\baudi\b/i,     name:"Audi"},
+];
+const BRAND_COLORS = {
+  Volvo:"#003057", BMW:"#1C69D4", Skoda:"#1D4F2B", Tesla:"#CC0000",
+  VW:"#001E50", Hyundai:"#002C5F", Toyota:"#EB0A1E", Ford:"#003B7A",
+  Mercedes:"#333", Kia:"#BB162B", Renault:"#EFDF00", XPeng:"#FF6B00",
+};
+
+function detectBrand(msg) { return BRANDS.find(b=>b.re.test(msg))?.name||null; }
+function detectPrice(msg) { return Object.keys(PRICE_RANGES).find(k=>msg.includes(k))||null; }
+function detectType(msg) {
+  if (/\bsuv\b/i.test(msg)) return "SUV";
+  if (/\bkombi\b/i.test(msg)) return "Kombi";
+  if (/\bvan\b/i.test(msg)) return "Van";
+  if (/egal|praktisch/i.test(msg)) return null;
+  return null;
+}
+function detectFuel(msg) {
+  if (/elektro|strom|electric/i.test(msg)) return "elektro";
+  if (/hybrid/i.test(msg)) return "hybrid";
+  if (/diesel/i.test(msg)) return "diesel";
+  if (/benzin|super/i.test(msg)) return "benzin";
+  return null;
+}
+
+function filterCars({price, type, fuel, brand, minRange, ausstattungPrio, seats}) {
+  const range = PRICE_RANGES[price] || {min:0, max:999999};
+  return CAR_DB.filter(c => {
+    const inPrice = c.priceNum >= range.min && c.priceNum <= range.max;
+    const inType  = !type  ? true : c.type.toLowerCase()===type.toLowerCase();
+    const inFuel  = !fuel  ? true : c.fuelType===fuel;
+    const inBrand = !brand ? true : c.brand.toLowerCase()===brand.toLowerCase();
+    // Reichweite: parse first number from range string (e.g. "355–578 km" → 355)
+    const inRange = !minRange ? true : parseInt(c.range) >= minRange;
+    // Ausstattung: check if car has the prioritized feature keywords
+    const inAusstattung = !ausstattungPrio ? true : ausstattungPrio.some(kw =>
+      c.ausstattung.some(a => a.toLowerCase().includes(kw.toLowerCase()))
+    );
+    // Sitzplätze
+    const inSeats = !seats ? true : seats === "7"
+      ? c.ausstattung.some(a => /7 sitze/i.test(a))
+      : !c.ausstattung.some(a => /7 sitze/i.test(a));
+    return inPrice && inType && inFuel && inBrand && inRange && inAusstattung && inSeats;
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ICONS
+═══════════════════════════════════════════════════════════════════ */
+const StarIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+    <path d="M12 2L13.8 9.2L21 12L13.8 14.8L12 22L10.2 14.8L3 12L10.2 9.2Z" fill="#000"/>
+    <path d="M19 2L19.9 5.1L23 6L19.9 6.9L19 10L18.1 6.9L15 6L18.1 5.1Z" fill="#000" opacity="0.4"/>
+  </svg>
+);
+const SendBtn = () => (
+  <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+    <circle cx="18" cy="18" r="18" fill="#FFCC00"/>
+    <path d="M14 8.5L15.3 12.2L19 13.5L15.3 14.8L14 18.5L12.7 14.8L9 13.5L12.7 12.2Z" fill="#1a1a1a"/>
+    <path d="M22 14L23.8 19.2L29 21L23.8 22.8L22 28L20.2 22.8L15 21L20.2 19.2Z" fill="#1a1a1a"/>
+    <path d="M12 21.5L12.8 23.8L15 24.5L12.8 25.2L12 27.5L11.2 25.2L9 24.5L11.2 23.8Z" fill="#1a1a1a"/>
+  </svg>
+);
+const CheckIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+    <path d="M2 6.5L5 9.5L11 3.5" stroke="#1a1a1a" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+const CloseIcon = ({size=11,color="#333"}) => (
+  <svg width={size} height={size} viewBox="0 0 11 11" fill="none">
+    <path d="M1.5 1.5L9.5 9.5M9.5 1.5L1.5 9.5" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
+/* ═══════════════════════════════════════════════════════════════════
+   LOGO SVG
+═══════════════════════════════════════════════════════════════════ */
+const LogoSVG = () => (
+  <svg width="112" height="112" viewBox="0 0 112 112" fill="none">
+    <circle cx="56" cy="56" r="56" fill="#FFCC00"/>
+    <path d="M85.1578 47.9162H52.3607C51.9849 47.9013 51.6101 47.9643 51.2598 48.1011C50.9095 48.2379 50.5913 48.4456 50.3251 48.7112C50.0588 48.9768 49.8504 49.2945 49.7128 49.6445C49.5751 49.9945 49.5113 50.3691 49.5253 50.7449V71.6137C49.5253 73.2718 50.7092 74.7773 52.3607 74.7773H69.0909L80.6975 84.5601V74.7773H85.1578C85.9855 74.7409 86.7695 74.396 87.3556 73.8105C87.9417 73.225 88.2875 72.4413 88.3248 71.6137V50.7449C88.3248 49.0968 86.8093 47.9162 85.1578 47.9162Z" fill="#FFCC00" stroke="#1D1D1B" strokeWidth="2" strokeMiterlimit="10"/>
+    <path d="M24.9185 32H57.5498C59.2079 32 60.4681 33.0678 60.4681 34.7093V55.5052C60.4788 56.2922 60.1781 57.0516 59.6315 57.6181C59.085 58.1845 58.3368 58.5121 57.5498 58.5295H41.1413L29.6275 68.4781V58.5295H24.9185C24.1316 58.5121 23.3834 58.1845 22.8368 57.6181C22.2903 57.0516 21.9896 56.2922 22.0003 55.5052V34.7093C22.0003 33.0678 23.277 32 24.9185 32Z" fill="white" stroke="#1D1D1B" strokeWidth="2" strokeMiterlimit="10"/>
+    <g clipPath="url(#lclip)">
+      <path d="M37.5002 38.3333L39.5835 42.9166L44.1668 44.9999L39.5835 47.0833L37.5002 51.6666L35.4168 47.0833L30.8335 44.9999L35.4168 42.9166L37.5002 38.3333ZM45.8335 42.4999L44.7835 40.2166L42.5002 39.1666L44.7835 38.1249L45.8335 35.8333L46.8752 38.1249L49.1668 39.1666L46.8752 40.2166L45.8335 42.4999ZM45.8335 54.1666L44.7835 51.8833L42.5002 50.8333L44.7835 49.7916L45.8335 47.4999L46.8752 49.7916L49.1668 50.8333L46.8752 51.8833L45.8335 54.1666Z" fill="black" fillOpacity="0.9"/>
+    </g>
+    <defs>
+      <clipPath id="lclip"><rect width="20" height="20" fill="white" transform="translate(30 35)"/></clipPath>
+    </defs>
+  </svg>
+);
+
+/* ═══════════════════════════════════════════════════════════════════
+   WELCOME SCREEN
+═══════════════════════════════════════════════════════════════════ */
+const FEATURES = [
+  {icon:"🚦", title:"Verkehrsmeldungen checken", desc:"Aktuelle Informationen zu Staus, Sperrungen und Verkehrslage erhalten."},
+  {icon:"⛽", title:"Tankstellensuche",           desc:"Eine Übersicht nahegelegener Tankstellen abrufen."},
+  {icon:"📄", title:"Frag den Artikel",           desc:"Fragen zu Artikeln stellen, hier am Beispiel der Kindersitz-Tests."},
+];
+
+function WelcomeScreen({onStart}) {
+  return (
+    <div style={ws.wrap}>
+      <LogoSVG/>
+      <h1 style={ws.h1}>Willkommen beim PoC des ADAC Agentenhubs!</h1>
+      <p style={ws.sub}>Aktuell umfasst mein Scope folgende Features. Probiere mich gerne aus!</p>
+      <div style={ws.grid}>
+        {FEATURES.map((f,i) => (
+          <button key={i} style={ws.card} onClick={() => onStart(f.title)}
+            onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.1)"}
+            onMouseLeave={e=>e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.06)"}>
+            <span style={{fontSize:20}}>{f.icon}</span>
+            <div><div style={ws.ct}>{f.title}</div><div style={ws.cd}>{f.desc}</div></div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+const ws = {
+  wrap:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"40px 48px",textAlign:"center",gap:0},
+  h1:{fontSize:38,fontWeight:700,fontFamily:"'Zilla Slab',serif",color:"#1a1a1a",margin:"28px 0 16px",maxWidth:560,lineHeight:1.2},
+  sub:{fontSize:16,color:"#666",margin:"0 0 36px",maxWidth:500},
+  grid:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,maxWidth:760,width:"100%"},
+  card:{background:"#fff",border:"1px solid #E5E7EB",borderRadius:10,padding:"16px",display:"flex",alignItems:"flex-start",gap:12,textAlign:"left",cursor:"pointer",transition:"box-shadow 0.2s",boxShadow:"0 1px 4px rgba(0,0,0,0.06)"},
+  ct:{fontSize:14,fontWeight:700,color:"#1a1a1a",marginBottom:4},
+  cd:{fontSize:12,color:"#666",lineHeight:1.5},
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   CAR CAROUSEL  (mit Mehrfachauswahl für Vergleich)
+═══════════════════════════════════════════════════════════════════ */
+function CarCarousel({cars, selectedIds, onToggleSelect, totalCount, onShowAll}) {
+  const [imgErrors, setImgErrors] = useState({});
+  const [hoveredId, setHoveredId] = useState(null);
+  const MAX_CAROUSEL = 5;
+  const shown = cars.slice(0, MAX_CAROUSEL);
+  return (
+    <div style={{margin:"10px 0 6px"}}>
+      <div style={car.scroll}>
+        {shown.map(c => {
+          const isSelected = selectedIds.includes(c.id);
+          const isHovered = hoveredId === c.id;
+          const err = imgErrors[c.id];
+          const brandColor = BRAND_COLORS[c.brand] || "#555";
+          return (
+            <div key={c.id}
+              onClick={()=>onToggleSelect(c)}
+              onMouseEnter={()=>setHoveredId(c.id)}
+              onMouseLeave={()=>setHoveredId(null)}
+              style={{...car.card,
+                border: isSelected
+                  ? "2.5px solid #FFCC00"
+                  : isHovered
+                    ? "2px solid #979797"
+                    : "1px solid #E5E7EB",
+                boxShadow: isHovered
+                  ? "0 4px 12px rgba(0,0,0,0.08)"
+                  : isSelected
+                    ? "0 0 0 1px #FFCC00, 0 4px 12px rgba(255,204,0,0.18)"
+                    : "0 1px 3px rgba(0,0,0,0.04)",
+                cursor:"pointer",
+                flexShrink:0,
+              }}>
+              {isSelected && <div style={car.badge}><CheckIcon/></div>}
+              <div>
+                <div style={car.imgWrap}>
+                  {!err
+                    ? <img src={c.img} alt={c.name} style={car.img} onError={()=>setImgErrors(p=>({...p,[c.id]:true}))}/>
+                    : <div style={{...car.placeholder,background:`linear-gradient(135deg,${brandColor}dd,${brandColor}88)`}}>
+                        <div style={car.pAbbr}>{c.brand.slice(0,3).toUpperCase()}</div>
+                        <div style={car.pName}>{c.name}</div>
+                      </div>
+                  }
+                </div>
+                <div style={car.body}>
+                  <div style={car.name}>{c.name} {c.gen} ({c.code})</div>
+                  <div style={car.specs}>
+                    <div><span style={car.lbl}>Hergestellt:</span> <strong>{c.years}</strong></div>
+                    <div><span style={car.lbl}>Ab:</span> <strong>{c.price}</strong></div>
+                    <div><span style={car.lbl}>Kraftstoff:</span> <strong>{c.fuel}</strong></div>
+                    <div><span style={car.lbl}>Verbrauch:</span> <strong>{c.cons}</strong></div>
+                    <div><span style={car.lbl}>Reichweite:</span> <strong>{c.range}</strong></div>
+                  </div>
+                  <div style={car.div}/>
+                  <div style={car.check}><span style={{marginRight:7}}><CheckIcon/></span>Marke: {c.brand}</div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        {totalCount > MAX_CAROUSEL && (
+          <div style={car.allCard}>
+            <div style={car.allCount}>{totalCount}</div>
+            <div style={car.allLabel}>Modelle gefunden</div>
+            <button style={car.allBtn} onClick={onShowAll}>Alle ansehen →</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+const car = {
+  scroll:{display:"flex",gap:12,overflowX:"auto",paddingBottom:8,scrollSnapType:"x mandatory",WebkitOverflowScrolling:"touch",scrollbarWidth:"none"},
+  card:{width:210,borderRadius:10,overflow:"hidden",background:"#fff",cursor:"pointer",transition:"border 0.15s, box-shadow 0.2s ease",position:"relative",scrollSnapAlign:"start"},
+  badge:{position:"absolute",top:8,right:8,width:24,height:24,borderRadius:"50%",background:"#FFCC00",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2},
+  imgWrap:{height:120,overflow:"hidden",background:"linear-gradient(160deg,#f8f8f8 0%,#eeeeee 100%)"},
+  img:{width:"100%",height:"108%",objectFit:"contain",display:"block",padding:"4px 0"},
+  placeholder:{width:"100%",height:"100%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"},
+  pAbbr:{fontSize:24,fontWeight:700,color:"rgba(255,255,255,0.9)",letterSpacing:2},
+  pName:{fontSize:9,color:"rgba(255,255,255,0.65)",marginTop:3,textAlign:"center",padding:"0 6px"},
+  body:{padding:"10px 12px"},
+  name:{fontSize:12,fontWeight:700,color:"#1a1a1a",lineHeight:1.4,marginBottom:8},
+  specs:{display:"flex",flexDirection:"column",gap:2,fontSize:11,color:"#333"},
+  lbl:{color:"#888"},
+  div:{height:1,background:"#eee",margin:"7px 0"},
+  check:{display:"flex",alignItems:"center",fontSize:11,color:"#333"},
+  allCard:{width:150,flexShrink:0,borderRadius:10,border:"1px dashed #FFCC00",background:"#FFFBEA",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,padding:16,scrollSnapAlign:"start"},
+  allCount:{fontSize:32,fontWeight:700,color:"#1a1a1a"},
+  allLabel:{fontSize:12,color:"#666",textAlign:"center"},
+  allBtn:{background:"#FFCC00",border:"none",borderRadius:20,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer"},
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   FLOATING COMPARISON TRAY
+═══════════════════════════════════════════════════════════════════ */
+function ComparisonTray({cars, onRemove, onCompare, onClear}) {
+  if (cars.length === 0) return null;
+  return (
+    <div style={tray.wrap}>
+      <div style={tray.inner}>
+        <div style={tray.left}>
+          <div style={tray.label}>Vergleich <span style={{color:"#888",fontWeight:400}}>{cars.length}/3</span></div>
+          <div style={tray.slots}>
+            {cars.map(c=>(
+              <div key={c.id} style={tray.slot}>
+                <img src={c.img} alt={c.name} style={{width:"100%",height:"100%",objectFit:"contain"}}
+                  onError={e=>e.target.style.display="none"}/>
+                <div style={tray.slotName}>{c.name.split(" ").pop()}</div>
+                <button style={tray.slotX} onClick={()=>onRemove(c.id)}><CloseIcon size={9} color="#555"/></button>
+              </div>
+            ))}
+            {Array.from({length:3-cars.length}).map((_,i)=>(
+              <div key={i} style={tray.emptySlot}><span style={{fontSize:18,color:"#ccc"}}>+</span></div>
+            ))}
+          </div>
+        </div>
+        <div style={{display:"flex",gap:10,flexShrink:0}}>
+          <button style={tray.clearBtn} onClick={onClear}>Zurücksetzen</button>
+          <button style={{...tray.compareBtn,opacity:cars.length<2?0.45:1}} disabled={cars.length<2} onClick={onCompare}>
+            Jetzt vergleichen →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+const tray={
+  wrap:{position:"sticky",bottom:0,background:"#fff",borderTop:"2px solid #FFCC00",zIndex:50,boxShadow:"0 -4px 20px rgba(0,0,0,0.1)"},
+  inner:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 52px",gap:16},
+  left:{display:"flex",alignItems:"center",gap:14},
+  label:{fontSize:13,fontWeight:600,color:"#1a1a1a",whiteSpace:"nowrap"},
+  slots:{display:"flex",gap:8},
+  slot:{position:"relative",width:56,height:46,borderRadius:8,border:"1px solid #E5E7EB",background:"linear-gradient(160deg,#f8f8f8,#eee)",overflow:"hidden",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"},
+  slotName:{fontSize:8,color:"#555",textAlign:"center",padding:"0 2px",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",width:"100%",position:"absolute",bottom:2},
+  slotX:{position:"absolute",top:1,right:1,background:"rgba(255,255,255,0.9)",border:"none",borderRadius:"50%",width:14,height:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0},
+  emptySlot:{width:56,height:46,borderRadius:8,border:"1px dashed #D1D5DB",background:"#fafafa",display:"flex",alignItems:"center",justifyContent:"center"},
+  clearBtn:{background:"none",border:"1px solid #D1D5DB",borderRadius:20,padding:"8px 14px",fontSize:12,color:"#555",cursor:"pointer"},
+  compareBtn:{background:"#FFCC00",border:"none",borderRadius:20,padding:"8px 16px",fontSize:12,fontWeight:600,color:"#1a1a1a",cursor:"pointer"},
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   INLINE COMPARISON TABLE (rendered inside chat)
+═══════════════════════════════════════════════════════════════════ */
+const COMPARE_ROWS=[
+  {label:"Preis",      fn:c=>c.price,   best:"min"},
+  {label:"Kraftstoff", fn:c=>c.fuel,    best:null},
+  {label:"Verbrauch",  fn:c=>c.cons,    best:null},
+  {label:"Reichweite", fn:c=>c.range,   best:"max"},
+  {label:"Baujahr",    fn:c=>c.years,   best:null},
+  {label:"Typ",        fn:c=>c.type,    best:null},
+];
+
+function ComparisonTable({cars}) {
+  const [imgErrors, setImgErrors] = useState({});
+  if (!cars || cars.length < 2) return null;
+  return (
+    <div style={ct.wrap}>
+      <div style={ct.scrollArea}>
+        <table style={ct.table}>
+          <thead>
+            <tr style={{background:"#fff"}}>
+              <th style={ct.thLabel}></th>
+              {cars.map(c=>(
+                <th key={c.id} style={ct.thCar}>
+                  <div style={ct.carImgWrap}>
+                    {!imgErrors[c.id]
+                      ? <img src={c.img} alt={c.name} style={{width:"100%",height:"100%",objectFit:"contain"}}
+                          onError={()=>setImgErrors(p=>({...p,[c.id]:true}))}/>
+                      : <div style={{width:"100%",height:"100%",background:BRAND_COLORS[c.brand]||"#eee",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                          <span style={{color:"#fff",fontWeight:700}}>{c.brand.slice(0,3)}</span>
+                        </div>
+                    }
+                  </div>
+                  <div style={ct.carName}>{c.name}</div>
+                  <div style={ct.carGen}>{c.gen} ({c.code})</div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {COMPARE_ROWS.map((row,i)=>{
+              const bestVal = row.best==="min"
+                ? cars.reduce((a,b)=>a.priceNum<b.priceNum?a:b).priceNum
+                : null;
+              return (
+                <tr key={i} style={{background:i%2===0?"#FAFAFA":"#fff"}}>
+                  <td style={ct.tdLabel}>{row.label}</td>
+                  {cars.map(c=>{
+                    const isBest = row.best==="min" && c.priceNum===bestVal;
+                    return (
+                      <td key={c.id} style={{...ct.tdVal,background:isBest?"#FFFBEA":"inherit"}}>
+                        {row.fn(c)}
+                        {isBest&&<div style={ct.bestBadge}>Günstigster</div>}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+            <tr style={{background:"#FAFAFA"}}>
+              <td style={ct.tdLabel}>Ausstattung</td>
+              {cars.map(c=>(
+                <td key={c.id} style={{...ct.tdVal,verticalAlign:"top"}}>
+                  {c.ausstattung.slice(0,5).map((a,i)=>(
+                    <div key={i} style={{fontSize:11,color:"#555",marginBottom:4,display:"flex",alignItems:"center",gap:5}}>
+                      <span style={{color:"#22c55e",flexShrink:0}}>✓</span>{a}
+                    </div>
+                  ))}
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+const ct={
+  wrap:{borderRadius:10,border:"1px solid #E5E7EB",overflow:"hidden",margin:"10px 0 6px",background:"#fff"},
+  scrollArea:{overflowX:"auto"},
+  table:{width:"100%",borderCollapse:"collapse",minWidth:420},
+  thLabel:{width:100,padding:"12px 14px",textAlign:"left",fontSize:11,color:"#888",borderBottom:"2px solid #F0F0F0",background:"#fff"},
+  thCar:{padding:"12px 14px",textAlign:"center",borderBottom:"2px solid #F0F0F0",minWidth:140},
+  carImgWrap:{width:100,height:65,margin:"0 auto 6px",background:"linear-gradient(160deg,#f8f8f8,#eee)",borderRadius:8,overflow:"hidden"},
+  carName:{fontSize:12,fontWeight:700,color:"#1a1a1a",marginBottom:2},
+  carGen:{fontSize:10,color:"#888"},
+  tdLabel:{padding:"9px 14px",fontSize:11,fontWeight:600,color:"#555",borderBottom:"1px solid #F0F0F0",background:"inherit"},
+  tdVal:{padding:"9px 14px",fontSize:12,color:"#1a1a1a",borderBottom:"1px solid #F0F0F0",textAlign:"center"},
+  bestBadge:{marginTop:3,fontSize:9,background:"#FFCC00",borderRadius:4,padding:"1px 5px",fontWeight:600,color:"#1a1a1a",display:"inline-block"},
+};
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   CRITERION COMPARE – Ranking-Karten für Einzelkriterien
+═══════════════════════════════════════════════════════════════════ */
+function CriterionCompare({data}) {
+  if (!data) return null;
+  return (
+    <div style={cr.wrap}>
+      <div style={cr.header}>{data.title}</div>
+      <div style={cr.list}>
+        {data.rows.map((row,i)=>(
+          <div key={i} style={{...cr.card, borderLeft: row.isBest ? "4px solid #FFCC00" : "4px solid transparent"}}>
+            <div style={cr.rank}>{row.rank}.</div>
+            <div style={cr.info}>
+              <div style={cr.name}>{row.name}</div>
+              {row.subtitle && <div style={cr.subtitle}>{row.subtitle}</div>}
+            </div>
+            <div style={cr.valueArea}>
+              <div style={cr.value}>{row.value}</div>
+              {row.isBest && <div style={cr.badge}>Bester Wert</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+      {data.summary && <div style={cr.summary}>{data.summary}</div>}
+    </div>
+  );
+}
+const cr = {
+  wrap:{margin:"10px 0 6px"},
+  header:{fontSize:13,fontWeight:700,color:"#1a1a1a",marginBottom:10,display:"flex",alignItems:"center",gap:8},
+  list:{display:"flex",flexDirection:"column",gap:6},
+  card:{display:"flex",alignItems:"center",gap:12,background:"#FAFAFA",borderRadius:8,padding:"10px 14px",transition:"background 0.15s"},
+  rank:{fontSize:18,fontWeight:700,color:"#BFBFBF",width:28,textAlign:"center",flexShrink:0},
+  info:{flex:1,minWidth:0},
+  name:{fontSize:13,fontWeight:600,color:"#1a1a1a",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"},
+  subtitle:{fontSize:11,color:"#888",marginTop:1},
+  valueArea:{display:"flex",flexDirection:"column",alignItems:"flex-end",flexShrink:0,gap:3},
+  value:{fontSize:13,fontWeight:700,color:"#1a1a1a"},
+  badge:{fontSize:9,fontWeight:600,background:"#FFCC00",color:"#1a1a1a",borderRadius:4,padding:"2px 7px",whiteSpace:"nowrap"},
+  summary:{fontSize:12,color:"#666",marginTop:10,lineHeight:1.5,padding:"8px 12px",background:"#F9F9F9",borderRadius:6,borderLeft:"3px solid #FFCC00"},
+};
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   HANDOFF MODAL – Brücke zur klassischen ADAC-Suche
+═══════════════════════════════════════════════════════════════════ */
+function HandoffModal({cars, ctx, onClose, onSelect, onRefine, onOpenAdac}) {
+  const [imgErrors, setImgErrors] = useState({});
+  const total = cars.length;
+  const preview = cars.slice(0, 3);
+
+  // Build ADAC search URL based on context
+  const buildSearchUrl = () => {
+    const params = [];
+    if (ctx.brand) params.push(`prompt=${encodeURIComponent(ctx.brand)}`);
+    else if (ctx.fuel) params.push(`prompt=${encodeURIComponent(ctx.fuel === "elektro" ? "Elektro" : ctx.fuel === "hybrid" ? "Hybrid" : ctx.fuel === "diesel" ? "Diesel" : "Benzin")}`);
+    else params.push("prompt=");
+    return `https://www.adac.de/rund-ums-fahrzeug/autokatalog/marken-modelle/autosuche/?${params.join("&")}`;
+  };
+
+  // Context summary tags
+  const tags = [];
+  if (ctx.brand) tags.push(ctx.brand);
+  if (ctx.type)  tags.push(ctx.type);
+  if (ctx.fuel)  tags.push(ctx.fuel === "elektro" ? "Elektro" : ctx.fuel === "hybrid" ? "Hybrid" : ctx.fuel === "diesel" ? "Diesel" : "Benzin");
+  if (ctx.price) tags.push(ctx.price);
+
+  return (
+    <div style={ho.overlay} onClick={onClose}>
+      <div style={ho.panel} onClick={e=>e.stopPropagation()}>
+        {/* Header */}
+        <div style={ho.header}>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <div style={ho.iconWrap}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z" stroke="#1a1a1a" strokeWidth="2" strokeLinecap="round"/></svg>
+            </div>
+            <div>
+              <div style={ho.title}>Alle {total} Ergebnisse ansehen</div>
+              <div style={ho.subtitle}>Auf adac.de mit erweiterter Filterung</div>
+            </div>
+          </div>
+          <button style={ho.closeBtn} onClick={onClose}><CloseIcon size={14} color="#555"/></button>
+        </div>
+
+        {/* Context Summary */}
+        <div style={ho.contextBar}>
+          <div style={ho.contextLabel}>Deine Suchkriterien:</div>
+          <div style={ho.tagsRow}>
+            {tags.length > 0 ? tags.map((t,i)=>(
+              <span key={i} style={ho.tag}>{t}</span>
+            )) : <span style={{fontSize:12,color:"#888"}}>Alle Fahrzeuge</span>}
+          </div>
+        </div>
+
+        {/* Preview */}
+        <div style={ho.previewSection}>
+          <div style={ho.previewLabel}>Vorschau – 3 von {total} Treffern:</div>
+          <div style={ho.previewGrid}>
+            {preview.map(c => {
+              const err = imgErrors[c.id];
+              const bc = BRAND_COLORS[c.brand]||"#555";
+              return (
+                <div key={c.id} style={ho.previewCard}
+                  onClick={()=>{onSelect(c);onClose();}}
+                  onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.12)"}
+                  onMouseLeave={e=>e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.06)"}>
+                  <div style={ho.previewImgWrap}>
+                    {!err
+                      ? <img src={c.img} alt={c.name} style={{width:"100%",height:"100%",objectFit:"contain"}} onError={()=>setImgErrors(p=>({...p,[c.id]:true}))}/>
+                      : <div style={{width:"100%",height:"100%",background:`linear-gradient(135deg,${bc}cc,${bc}77)`,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:8}}>
+                          <span style={{color:"#fff",fontWeight:700,fontSize:13}}>{c.brand.slice(0,3)}</span>
+                        </div>
+                    }
+                  </div>
+                  <div style={ho.previewName}>{c.name}</div>
+                  <div style={ho.previewPrice}>{c.price}</div>
+                  <div style={ho.previewMeta}>{c.fuel} · {c.range}</div>
+                </div>
+              );
+            })}
+            {/* "+X more" teaser card */}
+            {total > 3 && (
+              <div style={ho.moreCard}>
+                <div style={ho.moreCount}>+{total - 3}</div>
+                <div style={ho.moreLabel}>weitere Modelle</div>
+                <div style={ho.moreHint}>auf adac.de</div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Info box */}
+        <div style={ho.infoBox}>
+          <span style={{fontSize:16,flexShrink:0}}>💡</span>
+          <div style={{fontSize:12,color:"#555",lineHeight:1.5}}>
+            <strong>Warum wechseln?</strong> Die vollständige ADAC-Fahrzeugsuche bietet erweiterte Filter, detaillierte Testberichte, Konfiguratoren und aktuelle Angebote für alle {total} gefundenen Modelle.
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div style={ho.actions}>
+          <button style={ho.secondaryBtn} onClick={()=>{onClose();onRefine();}}>
+            🔧 Suche im Chat verfeinern
+          </button>
+          <button style={ho.primaryBtn} onClick={()=>{onClose();onOpenAdac();}}>
+            Alle Ergebnisse auf adac.de ansehen →
+          </button>
+        </div>
+
+        {/* Footer hint */}
+        <div style={ho.footer}>
+          Du wirst zur vollständigen ADAC-Fahrzeugsuche weitergeleitet.
+        </div>
+      </div>
+    </div>
+  );
+}
+const ho = {
+  overlay:{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:100,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(2px)"},
+  panel:{background:"#fff",width:"100%",maxWidth:640,borderRadius:"20px 20px 0 0",maxHeight:"90vh",display:"flex",flexDirection:"column",overflow:"hidden",animation:"slideUp 0.3s ease-out"},
+  header:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"20px 24px 16px"},
+  iconWrap:{width:44,height:44,borderRadius:12,background:"#FFCC00",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0},
+  title:{fontSize:17,fontWeight:700,color:"#1a1a1a"},
+  subtitle:{fontSize:12,color:"#888",marginTop:1},
+  closeBtn:{background:"none",border:"1px solid #E5E7EB",borderRadius:"50%",width:32,height:32,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0},
+  contextBar:{padding:"0 24px 16px",borderBottom:"1px solid #F0F0F0"},
+  contextLabel:{fontSize:11,color:"#888",fontWeight:500,marginBottom:8,textTransform:"uppercase",letterSpacing:"0.5px"},
+  tagsRow:{display:"flex",flexWrap:"wrap",gap:6},
+  tag:{background:"#F3F4F6",border:"1px solid #E5E7EB",borderRadius:16,padding:"4px 12px",fontSize:12,fontWeight:500,color:"#1a1a1a"},
+  previewSection:{padding:"16px 24px",overflowY:"auto",flex:1},
+  previewLabel:{fontSize:12,color:"#888",marginBottom:10},
+  previewGrid:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10},
+  previewCard:{background:"#fff",border:"1px solid #E5E7EB",borderRadius:10,padding:10,cursor:"pointer",transition:"box-shadow 0.2s",boxShadow:"0 1px 4px rgba(0,0,0,0.06)"},
+  previewImgWrap:{height:70,borderRadius:8,overflow:"hidden",background:"linear-gradient(160deg,#f8f8f8,#eee)",marginBottom:8},
+  previewName:{fontSize:12,fontWeight:600,color:"#1a1a1a",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"},
+  previewPrice:{fontSize:11,fontWeight:700,color:"#1a1a1a"},
+  previewMeta:{fontSize:10,color:"#888",marginTop:2},
+  moreCard:{border:"1px dashed #FFCC00",borderRadius:10,background:"#FFFBEA",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:10,minHeight:130},
+  moreCount:{fontSize:28,fontWeight:700,color:"#1a1a1a"},
+  moreLabel:{fontSize:11,color:"#666",marginTop:2},
+  moreHint:{fontSize:10,color:"#999",marginTop:4},
+  infoBox:{display:"flex",alignItems:"flex-start",gap:10,background:"#FAFAFA",border:"1px solid #EBEBEB",borderRadius:10,padding:"12px 16px",margin:"0 24px 16px"},
+  actions:{display:"flex",gap:10,padding:"0 24px 16px",flexShrink:0},
+  secondaryBtn:{flex:1,background:"#fff",border:"1px solid #D1D5DB",borderRadius:24,padding:"12px 16px",fontSize:13,fontWeight:500,color:"#1a1a1a",cursor:"pointer",transition:"background 0.15s"},
+  primaryBtn:{flex:1.5,background:"#FFCC00",border:"none",borderRadius:24,padding:"12px 16px",fontSize:13,fontWeight:700,color:"#1a1a1a",cursor:"pointer",textAlign:"center",textDecoration:"none",display:"flex",alignItems:"center",justifyContent:"center",transition:"background 0.15s"},
+  footer:{textAlign:"center",padding:"10px 24px 16px",fontSize:11,color:"#aaa"},
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   ADAC SUCHE – Mock der klassischen Suchergebnisseite
+═══════════════════════════════════════════════════════════════════ */
+function ADACSuchePage({cars, ctx, onClose, onSelectCar}) {
+  const [imgErrors, setImgErrors] = useState({});
+  const [expanded, setExpanded]   = useState(null);
+
+  const queryText = [
+    ctx.brand || "",
+    ctx.type || "",
+    ctx.fuel === "elektro" ? "Elektro" : ctx.fuel === "hybrid" ? "Hybrid" : ctx.fuel === "diesel" ? "Diesel" : ctx.fuel === "benzin" ? "Benzin" : "",
+    ctx.price || "",
+  ].filter(Boolean).join(", ") || "Familienauto";
+
+  return (
+    <div style={ad.overlay}>
+      <div style={ad.page}>
+        {/* Fake browser URL bar */}
+        <div style={ad.urlBar}>
+          <div style={ad.urlInner}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{flexShrink:0}}>
+              <path d="M12 22C12 22 20 18 20 12V5L12 2L4 5V12C4 18 12 22 12 22Z" stroke="#22c55e" strokeWidth="2" fill="none"/>
+            </svg>
+            <span style={ad.urlText}>adac.de/rund-ums-fahrzeug/autokatalog/marken-modelle/autosuche/?prompt={encodeURIComponent(ctx.brand||"")}</span>
+          </div>
+          <button style={ad.urlClose} onClick={onClose} title="Zurück zum Assistenten">
+            <CloseIcon size={12} color="#555"/>
+          </button>
+        </div>
+
+        {/* ADAC Header */}
+        <div style={ad.header}>
+          <div style={ad.headerInner}>
+            <div style={ad.logo}>
+              <svg width="72" height="28" viewBox="0 0 72 28" fill="none">
+                <rect width="72" height="28" rx="4" fill="#FFCC00"/>
+                <text x="36" y="19" textAnchor="middle" fill="#1a1a1a" fontSize="14" fontWeight="700" fontFamily="Arial">ADAC</text>
+              </svg>
+            </div>
+            <nav style={ad.nav}>
+              {["Mitgliedschaft","Reise & Freizeit","Rund ums Fahrzeug","Versicherungen","Services","Verkehr"].map((item,i)=>(
+                <span key={i} style={{...ad.navItem, ...(i===2?{fontWeight:700,borderBottom:"3px solid #FFCC00",paddingBottom:4}:{})}}>{item}</span>
+              ))}
+            </nav>
+            <div style={{display:"flex",gap:12,alignItems:"center"}}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z" stroke="#1a1a1a" strokeWidth="2" strokeLinecap="round"/></svg>
+              <div style={ad.sosBtn}>SOS</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Search section */}
+        <div style={ad.searchSection}>
+          <div style={ad.searchInner}>
+            <p style={ad.searchHint}>Geben Sie Ihre Suchanfrage einfach in natürlicher Sprache in das Suchfeld ein.</p>
+            <div style={ad.searchBox}>
+              <input style={ad.searchInput} defaultValue={queryText} readOnly/>
+            </div>
+            <button style={ad.searchBtn}>Suchen</button>
+          </div>
+        </div>
+
+        {/* Results */}
+        <div style={ad.results}>
+          <div style={ad.resultsInner}>
+            {cars.map((c,idx) => {
+              const err = imgErrors[c.id];
+              const bc = BRAND_COLORS[c.brand]||"#555";
+              const isExpanded = expanded === c.id;
+              return (
+                <div key={c.id} style={ad.resultCard}>
+                  <div style={ad.resultMain}>
+                    {/* Thumbnail */}
+                    <div style={ad.resultThumb}>
+                      {!err
+                        ? <img src={c.img} alt={c.name} style={{width:"100%",height:"100%",objectFit:"contain"}}
+                            onError={()=>setImgErrors(p=>({...p,[c.id]:true}))}/>
+                        : <div style={{width:"100%",height:"100%",background:`linear-gradient(135deg,${bc}cc,${bc}77)`,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                            <span style={{color:"#fff",fontWeight:700,fontSize:16}}>{c.brand.slice(0,3)}</span>
+                          </div>
+                      }
+                    </div>
+
+                    {/* Info */}
+                    <div style={ad.resultInfo}>
+                      <div style={ad.resultName}>{c.name} {c.gen} ({c.code})</div>
+                      <div style={ad.resultYearPrice}>{c.years} · {c.price}</div>
+                      <div style={ad.resultSpecs}>
+                        <div style={ad.specCol}>
+                          <div style={ad.specLabel}>Kraftstoff:</div>
+                          <div style={ad.specValue}>{c.fuel}</div>
+                        </div>
+                        <div style={ad.specCol}>
+                          <div style={ad.specLabel}>Verbrauch:</div>
+                          <div style={ad.specValue}>{c.cons}</div>
+                        </div>
+                        <div style={ad.specCol}>
+                          <div style={ad.specLabel}>Reichweite:</div>
+                          <div style={ad.specValue}>{c.range}</div>
+                        </div>
+                      </div>
+                      <div style={ad.resultActions}>
+                        <button style={ad.whyBtn} onClick={()=>{ onSelectCar(c); onClose(); }}>Warum dieses Fahrzeug?</button>
+                        <span style={ad.brandBadge}>✓ Marke: {c.brand}</span>
+                      </div>
+                    </div>
+
+                    {/* Model count */}
+                    <div style={ad.modelCount}>
+                      <button style={ad.modelCountBtn} onClick={()=>setExpanded(isExpanded?null:c.id)}>
+                        {Math.floor(Math.random()*120+30)} Modelle {isExpanded?"▲":"▼"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Expanded ausstattung preview */}
+                  {isExpanded && (
+                    <div style={ad.expandedPanel}>
+                      <div style={ad.expandedTitle}>Ausstattung (Auswahl):</div>
+                      <div style={ad.expandedChips}>
+                        {c.ausstattung.slice(0,8).map((a,i)=>(
+                          <span key={i} style={ad.expandedChip}>✓ {a}</span>
+                        ))}
+                      </div>
+                      <button style={ad.expandedCta} onClick={()=>{onSelectCar(c);onClose();}}>
+                        Zurück zum Chat – Details erfragen →
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Floating "Back to Assistant" button */}
+        <button style={ad.fab} onClick={onClose}
+          onMouseEnter={e=>e.currentTarget.style.transform="scale(1.05)"}
+          onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>
+          <StarIcon/> <span style={{marginLeft:8}}>Zurück zum KI-Assistenten</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+const ad = {
+  overlay:{position:"fixed",inset:0,zIndex:200,background:"#fff",overflowY:"auto"},
+  page:{minHeight:"100vh",background:"#fff"},
+  // URL bar
+  urlBar:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 16px",background:"#F3F4F6",borderBottom:"1px solid #E5E7EB"},
+  urlInner:{display:"flex",alignItems:"center",gap:8,background:"#fff",borderRadius:20,padding:"6px 14px",flex:1,marginRight:10},
+  urlText:{fontSize:12,color:"#555",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"},
+  urlClose:{background:"none",border:"1px solid #D1D5DB",borderRadius:"50%",width:28,height:28,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0},
+  // Header
+  header:{background:"#FFCC00",borderBottom:"1px solid #e6b800"},
+  headerInner:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 40px",maxWidth:1100,margin:"0 auto"},
+  logo:{flexShrink:0},
+  nav:{display:"flex",gap:18,alignItems:"center",flex:1,justifyContent:"center"},
+  navItem:{fontSize:13,color:"#1a1a1a",cursor:"default",whiteSpace:"nowrap"},
+  sosBtn:{background:"#CC0000",color:"#fff",fontSize:11,fontWeight:700,borderRadius:4,padding:"4px 8px"},
+  // Search
+  searchSection:{background:"#fff",borderBottom:"1px solid #E5E7EB",padding:"24px 40px"},
+  searchInner:{maxWidth:700,margin:"0 auto"},
+  searchHint:{fontSize:13,color:"#555",margin:"0 0 10px"},
+  searchBox:{marginBottom:12},
+  searchInput:{width:"100%",border:"2px solid #E5E7EB",borderRadius:8,padding:"14px 16px",fontSize:15,color:"#1a1a1a",fontFamily:"'Inter',sans-serif",background:"#fff"},
+  searchBtn:{width:"100%",background:"#1a1a1a",color:"#fff",border:"none",borderRadius:8,padding:"12px",fontSize:14,fontWeight:600,cursor:"pointer"},
+  // Results
+  results:{padding:"20px 40px",background:"#fff"},
+  resultsInner:{maxWidth:900,margin:"0 auto"},
+  resultCard:{border:"1px solid #E5E7EB",borderRadius:10,marginBottom:14,overflow:"hidden",background:"#fff",transition:"box-shadow 0.15s"},
+  resultMain:{display:"flex",alignItems:"stretch",padding:16,gap:16},
+  resultThumb:{width:160,height:110,borderRadius:8,overflow:"hidden",background:"linear-gradient(160deg,#f8f8f8,#eee)",flexShrink:0},
+  resultInfo:{flex:1,display:"flex",flexDirection:"column",justifyContent:"center"},
+  resultName:{fontSize:16,fontWeight:700,color:"#1a1a1a",marginBottom:2},
+  resultYearPrice:{fontSize:13,color:"#555",marginBottom:10},
+  resultSpecs:{display:"flex",gap:24,marginBottom:10},
+  specCol:{},
+  specLabel:{fontSize:11,color:"#888"},
+  specValue:{fontSize:13,fontWeight:600,color:"#1a1a1a"},
+  resultActions:{display:"flex",alignItems:"center",gap:16},
+  whyBtn:{background:"none",border:"none",padding:0,fontSize:13,color:"#1a1a1a",fontWeight:600,cursor:"pointer",textDecoration:"underline"},
+  brandBadge:{fontSize:12,color:"#555",display:"flex",alignItems:"center",gap:4},
+  modelCount:{display:"flex",alignItems:"flex-start",flexShrink:0},
+  modelCountBtn:{background:"none",border:"1px solid #E5E7EB",borderRadius:6,padding:"6px 12px",fontSize:12,color:"#555",cursor:"pointer",whiteSpace:"nowrap"},
+  // Expanded
+  expandedPanel:{borderTop:"1px solid #F0F0F0",padding:"14px 16px",background:"#FAFAFA"},
+  expandedTitle:{fontSize:12,fontWeight:600,color:"#555",marginBottom:8},
+  expandedChips:{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12},
+  expandedChip:{fontSize:11,color:"#333",background:"#fff",border:"1px solid #E5E7EB",borderRadius:12,padding:"3px 10px"},
+  expandedCta:{background:"#FFCC00",border:"none",borderRadius:20,padding:"8px 18px",fontSize:12,fontWeight:600,color:"#1a1a1a",cursor:"pointer"},
+  // FAB
+  fab:{position:"fixed",bottom:24,right:24,background:"#FFCC00",border:"none",borderRadius:28,padding:"12px 22px",fontSize:13,fontWeight:600,color:"#1a1a1a",cursor:"pointer",display:"flex",alignItems:"center",boxShadow:"0 4px 20px rgba(0,0,0,0.2)",zIndex:210,transition:"transform 0.15s"},
+};
+/* ═══════════════════════════════════════════════════════════════════
+   MAIN APP
+═══════════════════════════════════════════════════════════════════ */
+function ADACAssistant() {
+  const [started,    setStarted]    = useState(false);
+  const [messages,   setMessages]   = useState([]);
+  const [input,      setInput]      = useState("");
+  const [typing,     setTyping]     = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);   // multi-select car IDs
+  const [chip,       setChip]       = useState(null);       // car in detail conversation
+  const [step,       setStep]       = useState("idle");
+  const [ctx,        setCtx]        = useState({brand:null, price:null, type:null, fuel:null, minRange:null, ausstattungPrio:null, seats:null});
+  const [lastCars,   setLastCars]   = useState([]);         // last search results
+  const [modal,      setModal]      = useState(false);
+  const [adacPage,   setAdacPage]   = useState(false);
+  const bottomRef = useRef(null);
+  const inputRef  = useRef(null);
+  const prevSelectedCount = useRef(0);
+
+  useEffect(() => { bottomRef.current?.scrollIntoView({behavior:"smooth"}); }, [messages, typing]);
+
+  // Detect when all cars are deselected → show recovery dialog
+  useEffect(() => {
+    if (prevSelectedCount.current > 0 && selectedIds.length === 0 && lastCars.length > 0) {
+      const ts2 = () => { const d=new Date(); return `Heute, ${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}`; };
+      setMessages(p=>[...p,{
+        id: Date.now()+Math.random(),
+        role: "bot",
+        time: ts2(),
+        text: "Du hast alle Modelle abgewählt. Möchtest du die ursprüngliche Fahrzeugauswahl wieder sehen?",
+        chips: ["Fahrzeugauswahl anzeigen","Neue Suche starten"],
+      }]);
+    }
+    prevSelectedCount.current = selectedIds.length;
+  }, [selectedIds, lastCars]);
+
+  const ts = () => { const d=new Date(); return `Heute, ${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}`; };
+  const addBot  = (msg) => setMessages(p=>[...p,{id:Date.now()+Math.random(),role:"bot", time:ts(),...msg}]);
+  const addUser = (txt) => setMessages(p=>[...p,{id:Date.now(),              role:"user",time:ts(),text:txt}]);
+
+  // Show carousel in new bot message
+  const showCarousel = useCallback((cars, intro, ctxHint = {}) => {
+    setLastCars(cars);
+    const {brand, fuel, compareActive} = ctxHint;
+
+    // ── Context-aware chips ──
+    let chips = [];
+
+    if (compareActive) {
+      // Bereits Modelle ausgewählt → passende Optionen
+      chips = [
+        "Jetzt vergleichen",
+        "Auswahl zurücksetzen",
+        "Suche verfeinern",
+      ];
+    } else if (brand) {
+      // Markensuche: auf Vergleich + markenspezifische Filter hinweisen
+      chips = [
+        "Modelle vergleichen",
+        `Günstigstes ${brand}-Modell`,
+        fuel === "elektro" ? "Alle Elektro-Modelle" : "Elektro-Alternativen",
+        "Suche verfeinern",
+      ];
+    } else if (fuel === "elektro") {
+      chips = [
+        "Modelle vergleichen",
+        "Reichweite vergleichen",
+        "Günstigstes Elektroauto",
+        "Suche verfeinern",
+      ];
+    } else {
+      // Standard
+      chips = [
+        "Modelle vergleichen",
+        "Mehr Details zu einem Modell",
+        "Suche verfeinern",
+      ];
+    }
+
+    addBot({
+      text: intro,
+      tip: "Klicke auf eine Kachel zum Auswählen oder Abwählen. Ausgewählte Modelle erscheinen als Chips über dem Eingabefeld.",
+      cars,
+      cta: "Du kannst mir auch im Chat weitere Fragen zu den Modellen stellen oder die Suche verfeinern.",
+      chips,
+    });
+  }, []);
+
+  const toggleSelect = (car) => {
+    setSelectedIds(prev => {
+      if (prev.includes(car.id)) return prev.filter(id=>id!==car.id);
+      return [...prev, car.id];
+    });
+  };
+
+  const selectedCars = selectedIds.map(id=>CAR_DB.find(c=>c.id===id)).filter(Boolean);
+
+  const process = (txt, curStep, curCtx, curChip) => {
+
+    // ── Dialogischer Kriterien-Vergleich (wenn ≥2 Fahrzeuge ausgewählt) ──
+    const selCars = selectedIds.map(id=>CAR_DB.find(c=>c.id===id)).filter(Boolean);
+    if (selCars.length >= 2) {
+      const criterionChips = ["Preis vergleichen","Kraftstoff vergleichen","Verbrauch vergleichen","Reichweite vergleichen","Baujahr vergleichen","Ausstattung vergleichen","Gesamtvergleich"];
+
+      // Preis
+      if (/\bpreis\b|kosten|budget|günsti/i.test(txt) && !/alle.*vergleich|gesamt/i.test(txt)) {
+        const sorted = [...selCars].sort((a,b)=>a.priceNum-b.priceNum);
+        const diff = sorted[sorted.length-1].priceNum - sorted[0].priceNum;
+        addBot({
+          criterionCompare: {
+            title: "Preisvergleich",
+            rows: sorted.map((c,i)=>({
+              rank: i+1,
+              name: c.name,
+              subtitle: c.gen,
+              value: c.price,
+              isBest: i===0,
+            })),
+            summary: `Preisspanne: ${diff.toLocaleString("de-DE")} €. Der ${sorted[0].name} ist am günstigsten.`,
+          },
+          chips: criterionChips.filter(c=>c!=="Preis vergleichen"),
+        });
+        return;
+      }
+
+      // Kraftstoff
+      if (/kraftstoff|antrieb|motor(?!is)/i.test(txt) && !/alle.*vergleich|gesamt/i.test(txt)) {
+        const fuelLabel = f => f==="elektro"?"Elektrisch":f==="hybrid"?"Hybrid":f==="diesel"?"Diesel":"Benziner";
+        const types = [...new Set(selCars.map(c=>c.fuelType))];
+        addBot({
+          criterionCompare: {
+            title: "Kraftstoffvergleich",
+            rows: selCars.map((c,i)=>({
+              rank: i+1,
+              name: c.name,
+              subtitle: c.gen,
+              value: fuelLabel(c.fuelType),
+              isBest: false,
+            })),
+            summary: types.length===1
+              ? `Alle ${selCars.length} Modelle nutzen den gleichen Antrieb (${fuelLabel(types[0])}).`
+              : `Die Modelle haben unterschiedliche Antriebsarten – ideal für einen direkten Effizienzvergleich.`,
+          },
+          chips: criterionChips.filter(c=>c!=="Kraftstoff vergleichen"),
+        });
+        return;
+      }
+
+      // Verbrauch
+      if (/verbrauch|effizienz|sparsam|sparsamst/i.test(txt) && !/alle.*vergleich|gesamt/i.test(txt)) {
+        addBot({
+          criterionCompare: {
+            title: "Verbrauchsvergleich",
+            rows: selCars.map((c,i)=>({
+              rank: i+1,
+              name: c.name,
+              subtitle: c.fuel,
+              value: c.cons,
+              isBest: false,
+            })),
+            summary: "Hinweis: Elektrofahrzeuge (kWh/100km) und Verbrenner (l/100km) sind nur innerhalb gleicher Antriebsart direkt vergleichbar.",
+          },
+          chips: criterionChips.filter(c=>c!=="Verbrauch vergleichen"),
+        });
+        return;
+      }
+
+      // Reichweite
+      if (/reichweite|kilometer|km|weit.*fahren|strecke/i.test(txt) && !/alle.*vergleich|gesamt/i.test(txt)) {
+        const sorted = [...selCars].sort((a,b)=>parseInt(b.range)-parseInt(a.range));
+        addBot({
+          criterionCompare: {
+            title: "Reichweitenvergleich",
+            rows: sorted.map((c,i)=>({
+              rank: i+1,
+              name: c.name,
+              subtitle: c.fuel,
+              value: c.range,
+              isBest: i===0,
+            })),
+            summary: `Der ${sorted[0].name} bietet mit ${sorted[0].range} die größte Reichweite.`,
+          },
+          chips: criterionChips.filter(c=>c!=="Reichweite vergleichen"),
+        });
+        return;
+      }
+
+      // Baujahr
+      if (/baujahr|hergestellt|generation|alter|neu(?:est)?/i.test(txt) && !/alle.*vergleich|gesamt/i.test(txt)) {
+        addBot({
+          criterionCompare: {
+            title: "Baujahr & Generation",
+            rows: selCars.map((c,i)=>({
+              rank: i+1,
+              name: c.name,
+              subtitle: c.brand,
+              value: c.years,
+              isBest: false,
+            })),
+          },
+          chips: criterionChips.filter(c=>c!=="Baujahr vergleichen"),
+        });
+        return;
+      }
+
+      // Ausstattung
+      if (/ausstattung|feature|merkmal|extra|komfort|sicherheit.*vergleich/i.test(txt) && !/alle.*vergleich|gesamt/i.test(txt)) {
+        const allFeatures = selCars.map(c=>new Set(c.ausstattung));
+        const common = selCars[0].ausstattung.filter(a=>allFeatures.every(s=>s.has(a)));
+        addBot({
+          criterionCompare: {
+            title: "Ausstattungsvergleich",
+            rows: selCars.map((c,i)=>{
+              const unique = c.ausstattung.filter(a=>!common.includes(a)).slice(0,3);
+              return {
+                rank: i+1,
+                name: c.name,
+                subtitle: unique.length>0 ? `Exklusiv: ${unique.join(", ")}` : "Keine exklusiven Features",
+                value: `${c.ausstattung.length} Features`,
+                isBest: c.ausstattung.length === Math.max(...selCars.map(x=>x.ausstattung.length)),
+              };
+            }),
+            summary: common.length>0
+              ? `Gemeinsam (${common.length}): ${common.slice(0,5).join(", ")}${common.length>5?" …":""}`
+              : null,
+          },
+          chips: criterionChips.filter(c=>c!=="Ausstattung vergleichen"),
+        });
+        return;
+      }
+
+      // Gesamtvergleich (Tabelle)
+      if (/gesamt|alle.*vergleich|komplett|übersicht|tabelle/i.test(txt)) {
+        addBot({text:"Hier ist der Gesamtvergleich deiner ausgewählten Modelle:", compareCars:selCars, chips: criterionChips.filter(c=>c!=="Gesamtvergleich")});
+        return;
+      }
+    }
+
+    // ── Vergleich per Chat ──
+    if (/vergleich|vergleiche|vs\.|versus/i.test(txt) || txt === "Modelle vergleichen" || txt === "Jetzt vergleichen" || txt.startsWith("⊕ Volvos") || txt.startsWith("⊕ Weiteres")) {
+      if (txt === "⊕ Weiteres Modell hinzufügen") {
+        addBot({text:`Du hast bereits ${selectedIds.length} Modell${selectedIds.length>1?"e":""} ausgewählt. Klicke auf weitere Kacheln, um sie hinzuzufügen.`});
+        return;
+      }
+      if (txt === "Jetzt vergleichen" || txt === "Modelle vergleichen" || txt === "Modelle vergleichen" || txt.match(/^⊕ Volvos/)) {
+        if (selectedIds.length >= 2) {
+          const cmpCars = selectedIds.map(id=>CAR_DB.find(c=>c.id===id)).filter(Boolean);
+          addBot({text:"Hier ist der direkte Vergleich deiner ausgewählten Modelle:", compareCars:cmpCars, chips:["Preis vergleichen","Kraftstoff vergleichen","Verbrauch vergleichen","Reichweite vergleichen","Ausstattung vergleichen"]});
+          return;
+        }
+        addBot({text:'Wähle zuerst 2–3 Modelle durch Klick auf die Kacheln aus, dann kannst du sie vergleichen.'});
+        return;
+      }
+      if (txt === "Auswahl zurücksetzen") {
+        setSelectedIds([]);
+        addBot({text:"Auswahl zurückgesetzt. Wähle neue Modelle durch Klick auf die Kacheln aus."});
+        return;
+      }
+      const mentioned = CAR_DB.filter(c=>txt.toLowerCase().includes(c.name.toLowerCase())).slice(0,3);
+      if (mentioned.length >= 2) {
+        setSelectedIds(mentioned.map(c=>c.id));
+        addBot({text:`Hier ist der Vergleich der ${mentioned.length} Modelle:`, compareCars:mentioned, chips:["Preis vergleichen","Verbrauch vergleichen","Reichweite vergleichen","Ausstattung vergleichen"]});
+        return;
+      }
+      if (selectedIds.length >= 2) {
+        const cmpCars = selectedIds.map(id=>CAR_DB.find(c=>c.id===id)).filter(Boolean);
+        addBot({text:"Hier ist der Vergleich deiner ausgewählten Modelle:", compareCars:cmpCars, chips:["Preis vergleichen","Verbrauch vergleichen","Reichweite vergleichen","Ausstattung vergleichen"]});
+        return;
+      }
+      addBot({text:'Wähle zuerst 2–3 Modelle durch Klick auf die Kacheln aus, dann kannst du sie vergleichen.', chips:["Neue Suche starten"]});
+      return;
+    }
+
+    // ── Carousel intent chips ──
+    if (/günstigste/i.test(txt) && lastCars.length > 0) {
+      const cheapest = [...lastCars].sort((a,b)=>a.priceNum-b.priceNum)[0];
+      setChip(cheapest); setStep("detail");
+      addBot({text:`Das günstigste Modell ist der **${cheapest.name}** ${cheapest.price}. Möchtest du mehr Details?`, chips:["Motorisierung","Ausstattung","Verbrauch","Sicherheitsbewertung"]});
+      return;
+    }
+    if (/elektro.?alternative|andere.*elektro/i.test(txt)) {
+      const evCars = CAR_DB.filter(c=>c.fuelType==="elektro");
+      showCarousel(evCars.slice(0,5), "Hier sind Elektro-Alternativen in deiner Kategorie:", {fuel:"elektro", compareActive:selectedIds.length>0});
+      return;
+    }
+    if (/nur elektro|alle elektro/i.test(txt) && ctx.brand) {
+      const filtered = CAR_DB.filter(c=>c.brand===ctx.brand && c.fuelType==="elektro");
+      showCarousel(filtered.length>0?filtered:lastCars, `Alle Elektro-Modelle von ${ctx.brand}:`, {brand:ctx.brand, fuel:"elektro", compareActive:selectedIds.length>0});
+      return;
+    }
+    if (/alle.*modelle ansehen|alle.*ansehen/i.test(txt)) {
+      setModal(true);
+      return;
+    }
+    if (/preisfilter|budget anpassen|anderes budget/i.test(txt)) {
+      setStep("ask_price"); setCtx(p=>({...p,price:null}));
+      addBot({text:"In welcher Preisspanne soll ich suchen?", chips:["Unter 20.000 €","20.000 € – 35.000 €","35.000 € – 50.000 €","Über 50.000 €"]});
+      return;
+    }
+    if (/anderen kraftstoff|kraftstoff ändern|kraftstoff wählen/i.test(txt)) {
+      setStep("ask_fuel"); setCtx(p=>({...p,fuel:null}));
+      addBot({text:"Welche Kraftstoffart soll ich stattdessen suchen?", chips:["Benzin","Diesel","Elektro","Hybrid"]});
+      return;
+    }
+    if (/anderen fahrzeugtyp|fahrzeugtyp ändern|anderer typ/i.test(txt)) {
+      setStep("ask_type"); setCtx(p=>({...p,type:null}));
+      addBot({text:"Welchen Fahrzeugtyp bevorzugst du?", chips:["Kombi","Van","SUV","Egal/Hauptsache praktisch"]});
+      return;
+    }
+    if (/reichweite vergleichen/i.test(txt) && lastCars.length > 0) {
+      const sorted = [...lastCars].sort((a,b)=>parseInt(b.range)-parseInt(a.range));
+      addBot({text:`Reichweiten-Vergleich der aktuellen Modelle:\n${sorted.map((c,i)=>`${i+1}. **${c.name}**: ${c.range}`).join("\n")}`, chips:["Modelle vergleichen","Neue Suche starten"]});
+      return;
+    }
+
+    const brand = detectBrand(txt) || curCtx.brand;
+    const price = detectPrice(txt) || curCtx.price;
+    const type  = detectType(txt)  || curCtx.type;
+    const fuel  = detectFuel(txt)  || curCtx.fuel;
+
+    // ── Thematic off-topic questions (always answer) ──
+    if (/spritpreis|tankstelle|tankstellen|kindersitz/i.test(txt)) {
+      if (/spritpreis/i.test(txt)) { addBot({text:"Aktuelle Spritpreise findest du direkt beim ADAC: adac.de/kraftstoffpreise – dort wird der Durchschnittspreis täglich aktualisiert."}); return; }
+      if (/tankstelle/i.test(txt)) { addBot({text:"Für Tankstellen in deiner Nähe empfehle ich die ADAC-Tankstellensuche: adac.de/tankstellen – mit Preisvergleich in Echtzeit."}); return; }
+      if (/kindersitz/i.test(txt)) { addBot({text:"Aktuelle Kindersitz-Tests und Empfehlungen findest du im ADAC-Artikel zum Thema: adac.de/kindersitze – dort werden regelmäßig neue Modelle getestet."}); return; }
+    }
+
+    // ── Car selected via chip ──
+    if (curChip) {
+      const c = curChip;
+      if (/motorisierung|motor|ps|kw|leistung/i.test(txt)) {
+        addBot({text:`Der **${c.name}** ist mit verschiedenen Motorvarianten erhältlich. Der Basismotor bietet solide Leistung für den Alltag, während Topversionen bis zu 300+ PS erreichen. Verbrauch: ${c.cons}.`, chips:["Verbrauch","Ausstattung","Preis","Sicherheitsbewertung"]});
+        return;
+      }
+      if (/ausstattung/i.test(txt)) {
+        addBot({text:`Der **${c.name}** bietet folgende Ausstattungsmerkmale:`, bullets:c.ausstattung, footer:`Möchtest du Details zu bestimmten Ausstattungen oder Informationen zu weiteren Bereichen wie Motorisierung, Verbrauch oder Preis?`, chips:["Motorisierung","Verbrauch","Preis","Sicherheitsbewertung"]});
+        return;
+      }
+      if (/verbrauch|reichweite|effizienz/i.test(txt)) {
+        addBot({text:`Der **${c.name}** verbraucht im Schnitt **${c.cons}** und erreicht eine Reichweite von **${c.range}**. Das macht ihn ${c.fuelType==="elektro"?"zu einem sparsamen Elektroauto":"zu einem effizienten Fahrzeug"} für den Alltag.`, chips:["Motorisierung","Ausstattung","Preis","Sicherheitsbewertung"]});
+        return;
+      }
+      if (/preis|kosten|finanzierung|leasing/i.test(txt)) {
+        addBot({text:`Der **${c.name}** ist ${c.price} erhältlich. Für aktuelle Leasing- und Finanzierungsangebote empfehle ich einen Blick auf adac.de/fahrzeugwelt – dort gibt es geprüfte Konditionen direkt vom ADAC.`, chips:["Motorisierung","Ausstattung","Verbrauch","Sicherheitsbewertung"]});
+        return;
+      }
+      if (/sicherheit|ncap|crash/i.test(txt)) {
+        addBot({text:`Der **${c.name}** hat beim Euro NCAP-Crashtest exzellente Bewertungen erhalten und bietet serienmäßig: Notbremsassistent, Spurhalteassistent, Müdigkeitserkennung und Verkehrszeichenerkennung.`, chips:["Motorisierung","Ausstattung","Verbrauch","Preis"]});
+        return;
+      }
+      if (/ja|mehr|info|weiter/i.test(txt)) {
+        addBot({text:`Super! Zu welchem Bereich möchtest du mehr wissen? Zum Beispiel Motorisierung, Ausstattung, Verbrauch, Preis oder etwas anderes?`, chips:["Motorisierung","Ausstattung","Verbrauch","Preis","Sicherheitsbewertung"]});
+        return;
+      }
+    }
+
+    // ── Chip-Dialog: Fahrzeugauswahl erneut anzeigen ──
+    if (/fahrzeugauswahl erneut|fahrzeugauswahl anzeigen|🚗/i.test(txt)) {
+      if (lastCars.length > 0) {
+        showCarousel(lastCars, "Hier ist deine bisherige Fahrzeugauswahl:", {brand:ctx.brand, fuel:ctx.fuel, compareActive:selectedIds.length>0});
+        return;
+      }
+    }
+
+    // ── Chip-Dialog: Andere Marken-Modelle ──
+    if (/andere.*modelle entdecken/i.test(txt) && ctx.brand) {
+      const brandCars = CAR_DB.filter(c=>c.brand===ctx.brand);
+      showCarousel(brandCars, `Hier sind alle verfügbaren ${ctx.brand}-Modelle:`, {brand:ctx.brand, fuel:ctx.fuel, compareActive:selectedIds.length>0});
+      return;
+    }
+
+    // ── Chip-Dialog: Hybrid-Modelle zeigen ──
+    if (/auch hybrid|hybrid.*zeigen/i.test(txt)) {
+      const hybridCars = CAR_DB.filter(c=>c.fuelType==="hybrid");
+      showCarousel(hybridCars.length>0?hybridCars:lastCars, "Hier sind aktuelle Hybrid-Modelle:", {fuel:"hybrid", compareActive:selectedIds.length>0});
+      return;
+    }
+
+    // ── Chip deleted → re-show carousel (legacy) ──
+    if (/anderes modell|zurück|nochmal|andere wahl|caroussel|auswahl/i.test(txt)) {
+      if (lastCars.length > 0) {
+        showCarousel(lastCars, "Hier nochmal die Modellauswahl – wähle ein anderes Fahrzeug:", {brand:ctx.brand, fuel:ctx.fuel, compareActive:selectedIds.length>0});
+        return;
+      }
+    }
+
+    // ── IDLE → Wizard starten (Marke merken, aber immer alle 3 Fragen stellen) ──
+    if (curStep === "idle") {
+      const newCtx = {brand, price, type, fuel};
+      setCtx(newCtx);
+      const brandHint = brand ? ` **${brand}**` : "";
+      // Immer mit Preisspanne starten – egal ob Marke bekannt oder nicht
+      setStep("ask_price");
+      addBot({
+        text: `In welcher Preisspanne soll sich das${brandHint ? brandHint+"-Fahrzeug" : " Fahrzeug"} bewegen?`,
+        chips: ["Unter 20.000 €","20.000 € – 35.000 €","35.000 € – 50.000 €","Über 50.000 €"]
+      });
+      return;
+    }
+
+    // ── ASK_PRICE → ask type ──
+    if (curStep === "ask_price") {
+      const newCtx = {...curCtx, price: detectPrice(txt)||txt, brand: detectBrand(txt)||curCtx.brand};
+      setCtx(newCtx); setStep("ask_type");
+      addBot({text:"Welchen Fahrzeugtyp bevorzugst du? Zum Beispiel Kombi, Van, SUV oder etwas anderes?", chips:["Kombi","Van","SUV","Egal/Hauptsache praktisch"]});
+      return;
+    }
+
+    // ── ASK_TYPE → ask fuel ──
+    if (curStep === "ask_type") {
+      const newCtx = {...curCtx, type: detectType(txt)||txt};
+      setCtx(newCtx); setStep("ask_fuel");
+      addBot({text:"Welche Kraftstoffart bevorzugst du?", chips:["Benzin","Diesel","Elektro","Hybrid"]});
+      return;
+    }
+
+    // ── ASK_FUEL → show results ──
+    if (curStep === "ask_fuel") {
+      const newCtx = {...curCtx, fuel: detectFuel(txt)||txt.toLowerCase()};
+      setCtx(newCtx); setStep("results");
+      const results = filterCars(newCtx);
+      const MIN_CARDS = 5;
+      let displayCars = results;
+      let introText = "";
+      const brandStr = newCtx.brand ? `${newCtx.brand}-` : "";
+
+      if (displayCars.length >= MIN_CARDS) {
+        introText = `Hier sind ${brandStr}Fahrzeuge in deiner Preisklasse:`;
+      } else if (displayCars.length > 0 && displayCars.length < MIN_CARDS) {
+        const relaxed1 = filterCars({brand:newCtx.brand, price:newCtx.price, fuel:newCtx.fuel});
+        displayCars = relaxed1.length >= displayCars.length ? relaxed1 : displayCars;
+        if (displayCars.length < MIN_CARDS) {
+          const relaxed2 = filterCars({brand:newCtx.brand, price:newCtx.price});
+          displayCars = relaxed2.length >= displayCars.length ? relaxed2 : displayCars;
+        }
+        if (displayCars.length < MIN_CARDS && newCtx.brand) {
+          const relaxed3 = filterCars({brand:newCtx.brand});
+          displayCars = relaxed3.length >= displayCars.length ? relaxed3 : displayCars;
+        }
+        introText = `Hier sind ${brandStr}Fahrzeuge, die zu deiner Suche passen – einige ähnliche Modelle wurden ergänzt:`;
+      } else {
+        // Keine Treffer → Fallback ohne Kraftstoff/Typ
+        const fallback = filterCars({brand:newCtx.brand, price:newCtx.price});
+        if (fallback.length > 0) {
+          displayCars = fallback;
+          introText = `Keine exakten Treffer gefunden – hier sind ähnliche ${brandStr}Fahrzeuge in deiner Preisklasse:`;
+        } else if (newCtx.brand) {
+          displayCars = filterCars({brand:newCtx.brand});
+          introText = `Für **${newCtx.brand}** gibt es in dieser Kombination keine Treffer – hier alle ${newCtx.brand}-Modelle:`;
+        } else {
+          addBot({text:"Leider keine passenden Fahrzeuge gefunden. Soll ich die Suche anpassen?", chips:["Neue Suche starten","Anderes Budget","Anderen Kraftstoff wählen"]});
+          setStep("idle"); setCtx({brand:null,price:null,type:null,fuel:null});
+          return;
+        }
+      }
+
+      showCarousel(displayCars, introText, {
+        brand: newCtx.brand,
+        fuel: newCtx.fuel,
+        compareActive: selectedIds.length > 0,
+      });
+      return;
+    }
+
+    // ── RESULTS: car name mentioned → detail ──
+    if (curStep === "results") {
+      const match = CAR_DB.find(c => txt.toLowerCase().includes(c.name.toLowerCase()) || txt.includes(`(${c.code})`));
+      if (match) {
+        setChip(match); setStep("detail");
+        addBot({text:`Du hast den **${match.name} ${match.gen} (${match.code})** ausgewählt. Möchtest du mehr Details zu diesem Modell erfahren, z.B. zu Motorisierung, Ausstattung, Verbrauch oder Preis? Stelle gerne eine gezielte Frage oder sage, welche Informationen dich interessieren!`, chips:["Motorisierung","Ausstattung","Verbrauch","Preis","Sicherheitsbewertung"]});
+        return;
+      }
+    }
+
+    // ── Suche verfeinern (wenn User mit Ergebnissen nicht zufrieden ist) ──
+    if (/andere modelle|andere vorschläge|passt nicht|nicht zufrieden|gefällt.*nicht|suche verfeinern|genauer suchen|bessere ergebnisse|nochmal filtern/i.test(txt) && (curStep === "results" || curStep === "detail" || lastCars.length > 0)) {
+      setStep("refine_pick");
+      addBot({
+        text:"Kein Problem! Ich kann die Suche gezielt verfeinern. Welches Kriterium möchtest du anpassen?",
+        chips:["Reichweite eingrenzen","Ausstattung priorisieren","Marke wählen","Sitzplätze festlegen"],
+      });
+      return;
+    }
+
+    // ── REFINE_PICK → route to specific refinement question ──
+    if (curStep === "refine_pick") {
+      if (/reichweite/i.test(txt)) {
+        setStep("refine_range");
+        addBot({text:"Wie viel Reichweite brauchst du mindestens?", chips:["Unter 300 km","300–500 km","500–700 km","Über 700 km"]});
+        return;
+      }
+      if (/ausstattung/i.test(txt)) {
+        setStep("refine_ausstattung");
+        addBot({text:"Was ist dir bei der Ausstattung am wichtigsten?", chips:["Sicherheit","Komfort & Leder","Panoramadach","Anhängerkupplung","Allradantrieb","Navigationssystem"]});
+        return;
+      }
+      if (/marke/i.test(txt)) {
+        setStep("refine_brand");
+        const availableBrands = [...new Set(CAR_DB.map(c=>c.brand))].sort();
+        addBot({text:"Welche Marke bevorzugst du?", chips:availableBrands.slice(0,6).concat(["Keine Präferenz"])});
+        return;
+      }
+      if (/sitz/i.test(txt)) {
+        setStep("refine_seats");
+        addBot({text:"Wie viele Sitzplätze benötigst du?", chips:["5 Sitze (Standard)","7 Sitze (Großfamilie)"]});
+        return;
+      }
+      // Fallback in refine_pick
+      setStep("refine_pick");
+      addBot({text:"Bitte wähle ein Kriterium:", chips:["Reichweite eingrenzen","Ausstattung priorisieren","Marke wählen","Sitzplätze festlegen"]});
+      return;
+    }
+
+    // ── REFINE_RANGE → apply and re-filter ──
+    if (curStep === "refine_range") {
+      let minR = 0;
+      if (/unter 300|kurzstrecke/i.test(txt)) minR = 0;
+      else if (/300.*500|mittel/i.test(txt)) minR = 300;
+      else if (/500.*700/i.test(txt)) minR = 500;
+      else if (/über 700|700\+|langstrecke/i.test(txt)) minR = 700;
+      else minR = parseInt(txt) || 0;
+      const newCtx = {...curCtx, minRange:minR};
+      setCtx(newCtx);
+      const results = filterCars(newCtx);
+      if (results.length > 0) {
+        setStep("results");
+        showCarousel(results, `Hier sind Fahrzeuge mit mindestens ${minR} km Reichweite:`, {brand:newCtx.brand, fuel:newCtx.fuel, compareActive:selectedIds.length>0});
+      } else {
+        setStep("results");
+        showCarousel(lastCars, `Keine Treffer mit ${minR}+ km Reichweite. Hier die bisherige Auswahl:`, {brand:newCtx.brand, fuel:newCtx.fuel, compareActive:selectedIds.length>0});
+      }
+      return;
+    }
+
+    // ── REFINE_AUSSTATTUNG → apply and re-filter ──
+    if (curStep === "refine_ausstattung") {
+      const ausstattungMap = {
+        "sicherheit": ["Notbremsassistent","Spurhalteassistent","Fußgängererkennung"],
+        "komfort": ["Sitzheizung","Lederausstattung","Klimaanlage"],
+        "panoramadach": ["Panoramadach"],
+        "anhängerkupplung": ["Anhängerkupplung"],
+        "allrad": ["Allradantrieb"],
+        "navigation": ["Navigationssystem"],
+      };
+      const key = Object.keys(ausstattungMap).find(k => txt.toLowerCase().includes(k));
+      const prio = key ? ausstattungMap[key] : [txt];
+      const newCtx = {...curCtx, ausstattungPrio:prio};
+      setCtx(newCtx);
+      const results = filterCars(newCtx);
+      if (results.length > 0) {
+        setStep("results");
+        showCarousel(results, `Hier sind Fahrzeuge mit **${key || txt}** als Ausstattungsschwerpunkt:`, {brand:newCtx.brand, fuel:newCtx.fuel, compareActive:selectedIds.length>0});
+      } else {
+        setStep("results");
+        const relaxed = filterCars({...newCtx, ausstattungPrio:null});
+        showCarousel(relaxed.length > 0 ? relaxed : lastCars, `Kein Treffer für dieses Ausstattungsmerkmal. Hier ähnliche Modelle:`, {brand:newCtx.brand, fuel:newCtx.fuel, compareActive:selectedIds.length>0});
+      }
+      return;
+    }
+
+    // ── REFINE_BRAND → apply and re-filter ──
+    if (curStep === "refine_brand") {
+      if (/keine präferenz|egal/i.test(txt)) {
+        const newCtx = {...curCtx, brand:null};
+        setCtx(newCtx);
+        const results = filterCars(newCtx);
+        setStep("results");
+        showCarousel(results.length > 0 ? results : lastCars, "Hier sind Fahrzeuge aller Marken:", {fuel:newCtx.fuel, compareActive:selectedIds.length>0});
+      } else {
+        const brandName = detectBrand(txt) || txt.trim();
+        const newCtx = {...curCtx, brand:brandName};
+        setCtx(newCtx);
+        const results = filterCars(newCtx);
+        if (results.length > 0) {
+          setStep("results");
+          showCarousel(results, `Hier sind **${brandName}**-Modelle passend zu deinen Kriterien:`, {brand:brandName, fuel:newCtx.fuel, compareActive:selectedIds.length>0});
+        } else {
+          const allBrand = CAR_DB.filter(c=>c.brand.toLowerCase()===brandName.toLowerCase());
+          setStep("results");
+          showCarousel(allBrand.length > 0 ? allBrand : lastCars, allBrand.length > 0 ? `Keine exakten Treffer – hier alle ${brandName}-Modelle:` : `Marke nicht gefunden. Hier die bisherige Auswahl:`, {brand:brandName, fuel:newCtx.fuel, compareActive:selectedIds.length>0});
+        }
+      }
+      return;
+    }
+
+    // ── REFINE_SEATS → apply and re-filter ──
+    if (curStep === "refine_seats") {
+      const wantsSeven = /7|sieben|groß/i.test(txt);
+      const newCtx = {...curCtx, seats: wantsSeven ? "7" : "5"};
+      setCtx(newCtx);
+      const results = filterCars(newCtx);
+      if (results.length > 0) {
+        setStep("results");
+        showCarousel(results, wantsSeven ? "Hier sind Fahrzeuge mit **7 Sitzplätzen**:" : "Hier sind Fahrzeuge mit **5 Sitzplätzen**:", {brand:newCtx.brand, fuel:newCtx.fuel, compareActive:selectedIds.length>0});
+      } else {
+        setStep("results");
+        showCarousel(lastCars, `Keine Treffer mit ${wantsSeven?"7":"5"} Sitzen in dieser Kombination. Hier die bisherige Auswahl:`, {brand:newCtx.brand, fuel:newCtx.fuel, compareActive:selectedIds.length>0});
+      }
+      return;
+    }
+
+    // ── Neue Suche ──
+    if (/neue suche|neu starten|zurücksetzen|nochmal von vorne/i.test(txt)) {
+      setStep("idle"); setCtx({brand:null,price:null,type:null,fuel:null,minRange:null,ausstattungPrio:null,seats:null}); setChip(null); setLastCars([]); setSelectedIds([]);
+      addBot({text:"Kein Problem – beschreib mir einfach, was du suchst, und ich helfe dir weiter!"});
+      return;
+    }
+
+    // ── Fallback ──
+    addBot({text:"Ich helfe dir gerne! Nenn mir einfach eine Marke, dein Budget oder den gewünschten Fahrzeugtyp – oder stelle eine Frage zu einem der angezeigten Modelle.", chips:["Neue Suche starten","Ich suche einen Volvo","Elektroautos bis 50.000 €"]});
+  };
+
+  const send = (txt) => {
+    const text = (txt || input).trim();
+    if (!text) return;
+    addUser(text); setInput("");
+    const curStep = step, curCtx = ctx, curChip = chip;
+    setTyping(true);
+    setTimeout(() => { process(text, curStep, curCtx, curChip); setTyping(false); }, 600+Math.random()*350);
+  };
+
+  const handleKey = (e) => { if (e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();} };
+
+  const lastBot = [...messages].reverse().find(m=>m.role==="bot");
+  const criterionKeywords = ["vergleichen","Gesamtvergleich","Auswahl zurücksetzen","Jetzt vergleichen"];
+  const rawChips = !typing && lastBot?.chips ? lastBot.chips : [];
+  // Hide criterion/comparison chips when no cars are selected
+  const chips = selectedIds.length === 0
+    ? rawChips.filter(c => !criterionKeywords.some(k => c.includes(k)))
+    : rawChips;
+  const bold = (t) => t?.split(/\*\*(.*?)\*\*/g).map((p,i)=>i%2===1?<strong key={i}>{p}</strong>:p);
+
+  return (
+    <div style={s.root}>
+      <div style={s.wrap}>
+        {!started ? (
+          <>
+            <WelcomeScreen onStart={msg=>{setStarted(true);setTimeout(()=>send(msg),80);}}/>
+            <InputBar input={input} setInput={setInput} onSend={()=>{setStarted(true);send();}}
+              onKey={e=>{if(e.key==="Enter"){setStarted(true);send();}}}
+              inputRef={inputRef} selectedCars={[]} onDeselectCar={()=>{}}/>
+          </>
+        ) : (
+          <>
+            <div style={s.messages}>
+              {messages.map(msg => msg.role==="user" ? (
+                <div key={msg.id} style={s.userRow}>
+                  <div style={s.uName}>Max Mustermann · {msg.time}</div>
+                  <div style={s.uBubble}>{msg.text}</div>
+                </div>
+              ) : (
+                <div key={msg.id} style={s.botRow}>
+                  <div style={s.botHead}>
+                    <div style={s.avatar}><StarIcon/></div>
+                    <div><div style={s.botName}>KI-Assistent</div><div style={s.botTime}>{msg.time}</div></div>
+                  </div>
+                  <div style={s.botBody}>
+                    {msg.text && <p style={s.botTxt}>{bold(msg.text)}</p>}
+                    {msg.tip  && <div style={s.tip}><span>💡</span><span style={{marginLeft:8,fontSize:13,color:"#444"}}>{msg.tip}</span></div>}
+                    {msg.cars?.length>0 && (
+                      <CarCarousel
+                        cars={msg.cars}
+                        selectedIds={selectedIds}
+                        onToggleSelect={toggleSelect}
+                        totalCount={msg.cars.length}
+                        onShowAll={()=>setModal(true)}
+                      />
+                    )}
+                    {msg.compareCars?.length>=2 && (
+                      <ComparisonTable cars={msg.compareCars}/>
+                    )}
+                    {msg.criterionCompare && (
+                      <CriterionCompare data={msg.criterionCompare}/>
+                    )}
+                    {msg.bullets?.length>0 && (
+                      <ul style={s.bullets}>
+                        {msg.bullets.map((b,i)=><li key={i}>{b}</li>)}
+                      </ul>
+                    )}
+                    {msg.cta    && <p style={{...s.botTxt,marginTop:8}}>{msg.cta}</p>}
+                    {msg.footer && <p style={{...s.botTxt,marginTop:8}}>{msg.footer}</p>}
+                    <div style={s.expert}>
+                      <span style={s.expertQ}>Sie brauchen andere Informationen?</span>
+                      <a href="#" style={s.expertL}>Kontakt mit einem Experten aufnehmen</a>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {typing && (
+                <div style={s.botRow}>
+                  <div style={s.botHead}>
+                    <div style={s.avatar}><StarIcon/></div>
+                    <div><div style={s.botName}>KI-Assistent</div><div style={s.botTime}>{ts()}</div></div>
+                  </div>
+                  <div style={s.botBody}>
+                    <div style={s.dots}>{[0,180,360].map(d=><span key={d} style={{...s.dot,animationDelay:`${d}ms`}}/>)}</div>
+                  </div>
+                </div>
+              )}
+              <div ref={bottomRef}/>
+            </div>
+
+            {chips.length>0 && (
+              <div style={s.chipsRow}>
+                {chips.map((c,i)=>(
+                  <button key={i} style={s.chip} onClick={()=>send(c)}
+                    onMouseEnter={e=>e.currentTarget.style.background="#f5f5f5"}
+                    onMouseLeave={e=>e.currentTarget.style.background="#fff"}>{c}</button>
+                ))}
+              </div>
+            )}
+
+            <InputBar input={input} setInput={setInput} onSend={()=>send()} onKey={handleKey}
+              inputRef={inputRef}
+              selectedCars={selectedCars}
+              onDeselectCar={id=>setSelectedIds(p=>p.filter(x=>x!==id))}/>
+          </>
+        )}
+
+        <div style={s.footer}>
+          Unsere KI-Suche generiert Ergebnisse computerbasiert und ohne Gewähr auf Richtigkeit.{" "}
+          <a href="https://www.adac.de/datenschutz/" target="_blank" rel="noreferrer" style={s.footerL}>Datenschutz</a>
+        </div>
+      </div>
+
+      {modal && <HandoffModal cars={lastCars} ctx={ctx} onClose={()=>setModal(false)}
+        onSelect={c=>{
+          setChip(c); setStep("detail");
+          addUser(`${c.name} ${c.gen} (${c.code})`);
+          setTyping(true);
+          setTimeout(()=>{
+            addBot({text:`Du hast den **${c.name} ${c.gen} (${c.code})** ausgewählt. Möchtest du mehr Details erfahren?`, chips:["Motorisierung","Ausstattung","Verbrauch","Preis","Sicherheitsbewertung"]});
+            setTyping(false);
+          },600);
+        }}
+        onRefine={()=>{
+          addBot({text:"Kein Problem! Wie möchtest du die Suche anpassen?", chips:["Preisfilter anpassen","Anderen Kraftstoff wählen","Anderen Fahrzeugtyp","Neue Suche starten"]});
+        }}
+        onOpenAdac={()=>setAdacPage(true)}
+      />}
+
+      {adacPage && <ADACSuchePage cars={lastCars.length>0 ? lastCars : CAR_DB} ctx={ctx}
+        onClose={()=>setAdacPage(false)}
+        onSelectCar={c=>{
+          setChip(c); setStep("detail");
+          addUser(`${c.name} ${c.gen} (${c.code})`);
+          setTyping(true);
+          setTimeout(()=>{
+            addBot({text:`Du hast den **${c.name} ${c.gen} (${c.code})** auf adac.de ausgewählt. Möchtest du mehr Details erfahren?`, chips:["Motorisierung","Ausstattung","Verbrauch","Preis","Sicherheitsbewertung"]});
+            setTyping(false);
+          },600);
+        }}
+      />}
+
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Zilla+Slab:wght@700&display=swap');
+        *{box-sizing:border-box;} body{margin:0;background:#f0f2f5;}
+        @keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-5px);opacity:1}}
+        @keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+        input::placeholder{color:#aaa;} input:focus{outline:none;}
+        ::-webkit-scrollbar{width:4px;height:4px;}
+        ::-webkit-scrollbar-thumb{background:#ddd;border-radius:4px;}
+        ul{margin:6px 0 10px;padding-left:20px;}
+        ul li{font-size:14px;color:#1a1a1a;margin-bottom:5px;line-height:1.5;}
+      `}</style>
+    </div>
+  );
+}
+
+function InputBar({input,setInput,onSend,onKey,inputRef,selectedCars,onDeselectCar}) {
+  const hasChips = selectedCars.length > 0;
+  return (
+    <div style={s.inputWrap}>
+      <div style={{
+        border:"1px solid #D1D5DB",
+        borderRadius:8,
+        overflow:"hidden",
+        background:"#fff",
+      }}>
+        {/* Selected cars chips on gray background */}
+        {hasChips && (
+          <div style={s.chipsArea}>
+            {selectedCars.map(c=>(
+              <div key={c.id} style={s.selectedChip}>
+                <button style={s.selectedChipX} onClick={()=>onDeselectCar(c.id)}>
+                  <CloseIcon size={9} color="#333"/>
+                </button>
+                <span style={s.selectedChipLbl}>{c.name} {c.gen} ({c.code})</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {/* Input field – rectangular, no own border */}
+        <div style={s.inputInner}>
+          <input ref={inputRef} style={s.input} value={input} onChange={e=>setInput(e.target.value)}
+            onKeyDown={onKey} placeholder="Geben sie eine Nachricht ein..."/>
+          <button style={s.sendBtn} onClick={onSend}><SendBtn/></button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const s = {
+  root:{minHeight:"100vh",background:"#f0f2f5",display:"flex",justifyContent:"center",fontFamily:"'Inter',sans-serif"},
+  wrap:{width:"100%",maxWidth:900,background:"#fff",display:"flex",flexDirection:"column",minHeight:"100vh"},
+  messages:{flex:1,overflowY:"auto",padding:"28px 52px 12px"},
+  userRow:{display:"flex",flexDirection:"column",alignItems:"flex-end",marginBottom:22},
+  uName:{fontSize:12,color:"#888",fontWeight:500,marginBottom:5},
+  uBubble:{background:"#F3F4F6",borderRadius:10,padding:"10px 16px",fontSize:14,color:"#1a1a1a",maxWidth:"60%",lineHeight:1.55},
+  botRow:{marginBottom:26},
+  botHead:{display:"flex",alignItems:"center",gap:10,marginBottom:6},
+  avatar:{width:36,height:36,borderRadius:"50%",background:"#FFCC00",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0},
+  botName:{fontSize:14,fontWeight:600,color:"#1a1a1a"},
+  botTime:{fontSize:11,color:"#999"},
+  botBody:{paddingLeft:46},
+  botTxt:{fontSize:14,color:"#1a1a1a",margin:"0 0 8px",lineHeight:1.65},
+  tip:{display:"flex",alignItems:"center",background:"#FAFAFA",border:"1px solid #EBEBEB",borderRadius:8,padding:"8px 14px",marginBottom:12,marginTop:4},
+  bullets:{},
+  expert:{marginTop:8},
+  expertQ:{fontSize:12,color:"#999",display:"block"},
+  expertL:{fontSize:12,color:"#1a1a1a",textDecoration:"underline",display:"inline-block",marginTop:2},
+  dots:{display:"flex",gap:5,padding:"6px 0"},
+  dot:{width:8,height:8,borderRadius:"50%",background:"#FFCC00",display:"inline-block",animation:"bounce 1.2s infinite"},
+  chipsRow:{display:"flex",flexWrap:"wrap",gap:8,padding:"4px 52px 14px"},
+  chip:{background:"#fff",border:"1px solid #D1D5DB",borderRadius:8,padding:"7px 16px",fontSize:13,color:"#1a1a1a",cursor:"pointer",transition:"background 0.15s",whiteSpace:"nowrap"},
+  // New input area styles
+  inputWrap:{padding:"0 36px 16px",flexShrink:0},
+  chipsArea:{display:"flex",flexWrap:"wrap",gap:8,padding:"14px 16px 10px",background:"#F3F4F6",borderBottom:"1px solid #E5E7EB"},
+  selectedChip:{display:"flex",alignItems:"center",background:"#FFCC00",borderRadius:6,padding:"6px 12px 6px 8px",gap:7,flexShrink:0},
+  selectedChipX:{border:"none",cursor:"pointer",padding:0,display:"flex",alignItems:"center",flexShrink:0,width:18,height:18,borderRadius:"50%",justifyContent:"center",background:"rgba(0,0,0,0.08)"},
+  selectedChipLbl:{fontSize:13,fontWeight:500,color:"#1a1a1a",whiteSpace:"nowrap"},
+  inputInner:{display:"flex",alignItems:"center",padding:"10px 10px 10px 4px",background:"#fff",gap:6},
+  input:{flex:1,border:"none",background:"transparent",fontSize:14,color:"#1a1a1a",padding:"2px 12px",fontFamily:"'Inter',sans-serif"},
+  sendBtn:{background:"transparent",border:"none",cursor:"pointer",display:"flex",alignItems:"center",padding:0,flexShrink:0},
+  footer:{textAlign:"center",padding:"10px 24px 14px",fontSize:11,color:"#aaa",borderTop:"1px solid #F3F3F3"},
+  footerL:{color:"#666",textDecoration:"underline"},
+};
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(React.createElement(ADACAssistant));
+  </script>
+</body>
+</html>
