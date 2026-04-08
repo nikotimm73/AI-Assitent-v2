@@ -835,11 +835,17 @@ function ADACAssistant() {
   const bottomRef = useRef(null);
   const inputRef  = useRef(null);
   const prevSelectedCount = useRef(0);
+  const suppressDeselectDialog = useRef(false);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({behavior:"smooth"}); }, [messages, typing]);
 
-  // Detect when all cars are deselected → show recovery dialog
+  // Detect when all cars are deselected by user → show recovery dialog
   useEffect(() => {
+    if (suppressDeselectDialog.current) {
+      suppressDeselectDialog.current = false;
+      prevSelectedCount.current = selectedIds.length;
+      return;
+    }
     if (prevSelectedCount.current > 0 && selectedIds.length === 0 && lastCars.length > 0) {
       const ts2 = () => { const d=new Date(); return `Heute, ${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}`; };
       setMessages(p=>[...p,{
@@ -1294,6 +1300,8 @@ function ADACAssistant() {
     // ── Suche verfeinern (wenn User mit Ergebnissen nicht zufrieden ist) ──
     if (/andere.?modell|andere vorschläge|andere.?auto|andere.?fahrzeug|mehr auswahl|passt nicht|nicht zufrieden|gefällt.*nicht|suche verfeinern|genauer suchen|bessere ergebnisse|nochmal filtern|andere.?anzeig/i.test(txt) && (curStep === "results" || curStep === "detail" || lastCars.length > 0)) {
       setStep("refine_pick");
+      suppressDeselectDialog.current = true;
+      setSelectedIds([]);
       addBot({
         text:"Kein Problem! Ich kann die Suche gezielt verfeinern. Welches Kriterium möchtest du anpassen?",
         chips:["Reichweite eingrenzen","Ausstattung priorisieren","Marke wählen","Sitzplätze festlegen"],
@@ -1420,7 +1428,9 @@ function ADACAssistant() {
 
     // ── Neue Suche ──
     if (/neue suche|neu starten|zurücksetzen|nochmal von vorne/i.test(txt)) {
-      setStep("idle"); setCtx({brand:null,price:null,type:null,fuel:null,minRange:null,ausstattungPrio:null,seats:null}); setChip(null); setLastCars([]); setSelectedIds([]);
+      setStep("idle"); setCtx({brand:null,price:null,type:null,fuel:null,minRange:null,ausstattungPrio:null,seats:null}); setChip(null); setLastCars([]);
+      suppressDeselectDialog.current = true;
+      setSelectedIds([]);
       addBot({text:"Kein Problem – beschreib mir einfach, was du suchst, und ich helfe dir weiter!"});
       return;
     }
