@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ADAC KI-Assistent – Prototype V2</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.2/babel.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADAC KI-Assistent V3</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 </head>
 <body>
-  <div id="root"></div>
-  <script type="text/babel">
-    const { useState, useRef, useEffect, useCallback } = React;
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef, useEffect, useCallback } = React;
 
 /* ═══════════════════════════════════════════════════════════════════
    CAR DATABASE
@@ -59,10 +59,10 @@ const CAR_DB = [
 ];
 
 const PRICE_RANGES = {
-  "Unter 20.000 €":      {min:0,     max:20000},
-  "20.000 € – 35.000 €": {min:20000, max:35000},
-  "35.000 € – 50.000 €": {min:35000, max:50000},
-  "Über 50.000 €":       {min:50000, max:999999},
+  "Bis 25.000 €":        {min:0,     max:25000},
+  "25.000 – 40.000 €":   {min:25000, max:40000},
+  "40.000 – 60.000 €":   {min:40000, max:60000},
+  "Über 60.000 €":       {min:60000, max:999999},
 };
 
 const BRANDS = [
@@ -96,6 +96,140 @@ function detectFuel(msg) {
   if (/benzin|super/i.test(msg)) return "benzin";
   return null;
 }
+
+// ── V3 Dialog-Helfer (Modul-Level) ──
+
+// Kontextabhängige Chip-Auswahl: was passt zum bisherigen Profil?
+function aufbauChips(ctx) {
+  const u = ctx.usage;
+  if (u === "familie") return ["SUV / Geländewagen","Kombi","Van / Bus","Ist mir egal"];
+  if (u === "pendeln") return ["SUV / Geländewagen","Kombi","Limousine","Ist mir egal"];
+  if (u === "langstrecke") return ["SUV / Geländewagen","Kombi","Limousine","Ist mir egal"];
+  if (u === "gewerbe") return ["Van / Bus","Kombi","SUV / Geländewagen","Ist mir egal"];
+  if (u === "sport") return ["Cabrio / Coupé","SUV / Geländewagen","Limousine","Ist mir egal"];
+  return ["SUV / Geländewagen","Kombi","Van / Bus","Cabrio / Coupé","Limousine","Ist mir egal"];
+}
+function fuelChips(ctx) {
+  const u = ctx.usage;
+  if (u === "pendeln") return ["Elektro","Hybrid / Plug-in","Benzin","Bin noch unentschieden"];
+  if (u === "langstrecke") return ["Diesel","Hybrid / Plug-in","Benzin","Elektro","Bin noch unentschieden"];
+  if (u === "gewerbe") return ["Diesel","Elektro","Benzin","Bin noch unentschieden"];
+  return ["Elektro","Hybrid / Plug-in","Benzin","Diesel","Bin noch unentschieden"];
+}
+function budgetChips(ctx) {
+  const a = ctx.aufbau;
+  if (a === "Cabrio" || ctx.usage === "sport") return ["25.000 – 40.000 €","40.000 – 60.000 €","Über 60.000 €"];
+  if (a === "Van" || ctx.usage === "gewerbe") return ["Bis 25.000 €","25.000 – 40.000 €","40.000 – 60.000 €"];
+  return ["Bis 25.000 €","25.000 – 40.000 €","40.000 – 60.000 €","Über 60.000 €"];
+}
+function powerChips(ctx) {
+  if (ctx.usage === "sport") return ["Sportlich","Alltagstauglich","Ist mir nicht so wichtig"];
+  if (ctx.usage === "pendeln" || ctx.usage === "gewerbe") return ["Sparsam & effizient","Alltagstauglich","Ist mir nicht so wichtig"];
+  return ["Sparsam & effizient","Alltagstauglich","Sportlich","Ist mir nicht so wichtig"];
+}
+function featureChips(ctx) {
+  const base = [];
+  if (ctx.usage === "familie") { base.push("Sicherheitspaket","7 Sitzplätze","Komfort & Leder"); }
+  else if (ctx.usage === "langstrecke") { base.push("Komfort & Leder","Anhängerkupplung","Allradantrieb"); }
+  else if (ctx.usage === "gewerbe") { base.push("Anhängerkupplung","Allradantrieb","7 Sitzplätze"); }
+  else if (ctx.usage === "sport") { base.push("Panoramadach","Komfort & Leder","Sicherheitspaket"); }
+  else { base.push("Sicherheitspaket","Komfort & Leder","Panoramadach"); }
+  base.push("Direkt zu den Ergebnissen");
+  return base;
+}
+function aufbauQuestion(ctx) {
+  if (ctx.usage === "familie") return "Welche Fahrzeugform passt am besten zu euch?";
+  if (ctx.usage === "sport") return "Was für ein Fahrzeugtyp soll es werden?";
+  if (ctx.usage === "gewerbe") return "Welcher Fahrzeugtyp passt für den Einsatzzweck?";
+  return "Hast du schon eine Vorstellung, welche Fahrzeugform es sein soll?";
+}
+function fuelQuestion(ctx) {
+  if (ctx.usage === "pendeln") return "Für kurze Strecken ist Elektro ideal – wie stehst du zum Antrieb?";
+  if (ctx.usage === "langstrecke") return "Auf der Langstrecke zählt Reichweite – welcher Antrieb passt für dich?";
+  return "Jetzt wird's spannend: Welcher Antrieb soll es sein?";
+}
+
+function detectUsage(msg) {
+  if (/pendel|arbeit|stadt|city|kurz/i.test(msg)) return "pendeln";
+  if (/famili|kind|kinder|urlaub|freizeit|platz/i.test(msg)) return "familie";
+  if (/langstrecke|reise|autobahn|fern|lang|weit/i.test(msg)) return "langstrecke";
+  if (/gewerbe|transport|firmen|handwerk|liefe/i.test(msg)) return "gewerbe";
+  if (/spaß|sport|schnell|dynamisch|cabrio|roadster/i.test(msg)) return "sport";
+  return null;
+}
+function detectAufbau(msg) {
+  if (/\bsuv\b|geländewagen|offroad/i.test(msg)) return "SUV";
+  if (/kombi|touring|variant/i.test(msg)) return "Kombi";
+  if (/\bvan\b|\bbus\b|hochdach/i.test(msg)) return "Van";
+  if (/cabrio|roadster|coupe|coupé/i.test(msg)) return "Cabrio";
+  if (/limousine|sedan/i.test(msg)) return "Limousine";
+  return null;
+}
+function detectPower(msg) {
+  if (/effizient|sparsam|wenig/i.test(msg)) return "effizient";
+  if (/alltag|normal|ausreichend/i.test(msg)) return "alltag";
+  if (/sportlich|dynamisch|flott/i.test(msg)) return "sportlich";
+  return null;
+}
+function simCount(c) {
+  let n = 162808;
+  if (c.usage) n = Math.round(n * 0.32);
+  if (c.aufbau) n = Math.round(n * 0.22);
+  if (c.fuel) n = Math.round(n * 0.32);
+  if (c.price) n = Math.round(n * 0.28);
+  if (c.power) n = Math.round(n * 0.45);
+  if (c.brand) n = Math.round(n * 0.14);
+  if (c.ausstattungPrio) n = Math.round(n * 0.55);
+  return Math.max(n, 8);
+}
+function fmtC(n) { return n >= 1000 ? "~" + Math.round(n/1000) + "k" : "" + n; }
+
+// Kontextuelle Reaktionen – variiert je nach Kombination
+function usageReaction(u, ctx) {
+  const r = {
+    pendeln:["Pendeln und Stadtverkehr – da zählen kompakte Maße und niedriger Verbrauch. Viele Elektromodelle glänzen hier besonders!","Für den täglichen Weg zur Arbeit braucht es vor allem Effizienz und Zuverlässigkeit. Da kann ich gut filtern!","Stadt und Pendeln – da achten wir besonders auf Wendigkeit und Unterhaltskosten."],
+    familie:["Familie und Freizeit – kenne ich gut! Da braucht es Platz für Kindersitze und Gepäck, dazu solide Sicherheitsausstattung.","Familienfahrzeug – da ist mir wichtig, dass wir auf Isofix, Kofferraumvolumen und Assistenzsysteme achten.","Mit Familie an Bord zählen Platz und Sicherheit am meisten. Da schauen wir genau hin!"],
+    langstrecke:["Langstrecke und Reisen – da stehen Komfort, Reichweite und ein leiser Innenraum ganz oben. Das grenzt schon gut ein!","Für die Autobahn braucht es Reisekomfort, gute Sitze und ordentlich Reichweite. Lass uns die besten rausfiltern!","Viel unterwegs? Dann achten wir besonders auf Komfort, Verbrauch und Reichweite."],
+    gewerbe:["Gewerbeeinsatz – da zählen Robustheit, Laderaum und Wirtschaftlichkeit. Ganz andere Prioritäten als privat!","Für den Geschäftsalltag filtern wir nach Nutzwert, Haltbarkeit und günstigen Unterhaltskosten.","Firmenwagen oder Transporter – da gibt es clevere Optionen. Lass uns eingrenzen!"],
+    sport:["Spaß und Fahrdynamik – jetzt wird's aufregend! Da schauen wir auf Leistung, Handling und natürlich den Grinsfaktor.","Sportlich unterwegs – das liebe ich! Da filtern wir nach PS, Fahrwerk und dem gewissen Etwas.","Fahrspaß hat Priorität – da wird die Auswahl richtig spannend!"]
+  };
+  return (r[u]||["Verstanden!"])[Math.floor(Math.random()*(r[u]||[""]).length)];
+}
+function aufbauReaction(a, ctx) {
+  const family = ctx.usage === "familie";
+  const r = {
+    SUV: family ? "SUV für die Familie – perfekte Kombination! Der hohe Einstieg ist übrigens super praktisch mit Kindersitzen, und der Kofferraum bietet ordentlich Platz." : "SUV – die beliebteste Fahrzeugklasse aktuell. Riesige Auswahl für dich!",
+    Kombi: family ? "Kombi ist die clevere Familienwahl – oft mehr Kofferraum als ein SUV, und angenehmer zu fahren." : "Kombi – viel Platz, praktisch im Alltag und oft die effizientere Wahl.",
+    Van: "Van oder Bus – maximaler Raum für Passagiere und Gepäck. Besonders wenn es mal mehr als 5 Sitze braucht!",
+    Cabrio: "Cabrio oder Coupé – wenn das Herz mitentscheidet! Da schauen wir auf Fahrspaß und Stil.",
+    Limousine: "Limousine – die elegante Wahl. Komfortabel, leise und oft mit der besten Geräuschdämmung."
+  };
+  return r[a] || "Flexibel bleiben ist auch schlau – so sehen wir die ganze Bandbreite!";
+}
+function fuelReaction(f, ctx) {
+  const isSUV = ctx.aufbau === "SUV";
+  const isFamily = ctx.usage === "familie";
+  const r = {
+    elektro: isFamily ? "Elektro fürs Familienauto – leise, günstig im Unterhalt, und die Kinder lieben die Beschleunigung! Viele Modelle schaffen inzwischen über 400 km Reichweite." : "Elektro – zukunftssicher und mit jedem Jahr bessere Infrastruktur. Lass uns schauen, was es gibt!",
+    hybrid: "Hybrid ist eine smarte Zwischenlösung – rein elektrisch in der Stadt, Verbrenner für die Langstrecke. Das Beste aus beiden Welten!",
+    diesel: ctx.usage==="langstrecke" ? "Diesel und Langstrecke – das ist nach wie vor eine starke Kombination. Niedriger Verbrauch bei hoher Laufleistung." : "Diesel – gerade bei höherer Laufleistung nach wie vor wirtschaftlich.",
+    benzin: "Benzin bietet die größte Modellvielfalt und unkomplizierte Technik. Schauen wir, was in deiner Kategorie verfügbar ist!"
+  };
+  return r[f] || "Alle Antriebsarten offen lassen – so bekommst du den fairsten Vergleich!";
+}
+function budgetReaction(p, ctx) {
+  const labels = {"Bis 25.000 €":"bis 25.000 Euro","25.000 – 40.000 €":"25 bis 40 Tausend","40.000 – 60.000 €":"40 bis 60 Tausend","Über 60.000 €":"im Premium-Segment"};
+  return p ? "Budget "+( labels[p]||"notiert")+" – da gibt es "+(ctx.fuel==="elektro"?"gerade richtig spannende Elektro-Modelle!":"eine gute Auswahl!") : "Ohne festes Budget schauen wir einfach, was am besten passt.";
+}
+function powerReaction(pw, ctx) {
+  const r = {
+    effizient: ctx.fuel==="elektro" ? "Sparsam beim Stromverbrauch – das verlängert die Reichweite. Kluger Ansatz!" : "Effizient unterwegs – gut für den Geldbeutel und die Umwelt.",
+    alltag: "Alltagstaugliche Leistung – reicht locker für Überholen und Autobahnauffahrten, ohne beim Verbrauch zu übertreiben.",
+    sportlich: "Sportliche Leistung – da kommt Freude auf! Achten wir trotzdem auf ein gutes Leistung-Verbrauch-Verhältnis."
+  };
+  return pw ? (r[pw]||"Verstanden!") : "Leistung ist flexibel – dann gewichten wir andere Kriterien stärker.";
+}
+
 
 function filterCars({price, type, fuel, brand, minRange, ausstattungPrio, seats}) {
   const range = PRICE_RANGES[price] || {min:0, max:999999};
@@ -176,7 +310,7 @@ function WelcomeScreen({onStart}) {
   return (
     <div style={ws.wrap}>
       <LogoSVG/>
-      <h1 style={ws.h1}>Willkommen beim PoC des ADAC Agentenhubs!</h1>
+      <h1 style={ws.h1}>ADAC Assistent V3 – Fahrzeugberatung</h1>
       <p style={ws.sub}>Aktuell umfasst mein Scope folgende Features. Probiere mich gerne aus!</p>
       <div style={ws.grid}>
         {FEATURES.map((f,i) => (
@@ -294,6 +428,91 @@ const car = {
   allLabel:{fontSize:12,color:"#666",textAlign:"center"},
   allBtn:{background:"#FFCC00",border:"none",borderRadius:20,padding:"8px 16px",fontSize:12,fontWeight:600,cursor:"pointer"},
 };
+
+/* ═══════════════════════════════════════════════════════════════════
+   TABBED CAR RESULTS – Vertikale Liste, ohne Bilder, mit CTA + Auswahl
+═══════════════════════════════════════════════════════════════════ */
+function TabbedCarousel({tabs, selectedIds, onToggleSelect, onShowAll}) {
+  const [activeTab, setActiveTab] = useState(0);
+  const currentCars = tabs[activeTab]?.cars || [];
+  const buildUrl = (c) => "https://www.adac.de/rund-ums-fahrzeug/autokatalog/marken-modelle/autosuche/?prompt="+encodeURIComponent(c.brand+" "+c.name);
+
+  return (
+    <div style={{margin:"10px 0 6px"}}>
+      <div style={tl.tabBar}>
+        {tabs.map((tab,i) => (
+          <button key={i} onClick={()=>setActiveTab(i)}
+            style={{...tl.tab, ...(i===activeTab ? tl.tabActive : {})}}>
+            <span style={{fontSize:14}}>{tab.icon}</span>
+            <span>{tab.label}</span>
+            <span style={{...tl.cnt, ...(i===activeTab?tl.cntActive:{})}}>{tab.cars.length}</span>
+          </button>
+        ))}
+      </div>
+      {tabs[activeTab]?.desc && <div style={tl.desc}>{tabs[activeTab].desc}</div>}
+      <div style={tl.list}>
+        {currentCars.map(c => {
+          const isSelected = selectedIds.includes(c.id);
+          const bc = BRAND_COLORS[c.brand] || "#555";
+          const fBg = c.fuelType==="elektro"?"#E1F5EE":c.fuelType==="hybrid"?"#E6F1FB":c.fuelType==="diesel"?"#F1EFE8":"#F3F4F6";
+          const fCol = c.fuelType==="elektro"?"#085041":c.fuelType==="hybrid"?"#0C447C":c.fuelType==="diesel"?"#444441":"#555";
+          return (
+            <div key={c.id} style={{...tl.item, borderColor: isSelected?"#FFCC00":"#E5E7EB", background: isSelected?"#FFFDF5":"#fff"}}>
+              <div style={tl.selectArea} onClick={()=>onToggleSelect(c)}>
+                <div style={{...tl.brandDot, background:bc}}>{c.brand.slice(0,2)}</div>
+                <div style={tl.main}>
+                  <div style={tl.carName}>{c.name}</div>
+                  <div style={tl.gen}>{c.gen} · {c.brand}</div>
+                  <div style={tl.specs}>
+                    <span style={tl.spec}>Reichweite: <strong>{c.range}</strong></span>
+                    <span style={tl.spec}>Verbrauch: <strong>{c.cons}</strong></span>
+                  </div>
+                </div>
+                <div style={tl.priceCol}>
+                  <div style={tl.price}>{c.price.replace("ab ","")}</div>
+                  <div style={{...tl.fuelBadge, background:fBg, color:fCol}}>{c.fuel}</div>
+                </div>
+                <div style={{...tl.checkCircle, background:isSelected?"#FFCC00":"transparent", borderColor:isSelected?"#FFCC00":"#D1D5DB"}}>
+                  {isSelected && <CheckIcon/>}
+                </div>
+              </div>
+              <div style={tl.ctaRow}>
+                <button style={tl.ctaBtn} onClick={(e)=>{e.stopPropagation(); window.open(buildUrl(c),"_blank");}}>
+                  Details auf adac.de ansehen →
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+const tl = {
+  tabBar:{display:"flex",gap:4,marginBottom:8,overflowX:"auto",scrollbarWidth:"none",WebkitOverflowScrolling:"touch"},
+  tab:{display:"flex",alignItems:"center",gap:5,background:"#F3F4F6",border:"1.5px solid transparent",borderRadius:8,padding:"7px 12px",fontSize:12,fontWeight:500,color:"#555",cursor:"pointer",whiteSpace:"nowrap",transition:"all 0.15s",flexShrink:0},
+  tabActive:{background:"#FFFBEA",borderColor:"#FFCC00",color:"#1a1a1a",fontWeight:600},
+  cnt:{background:"rgba(0,0,0,0.06)",borderRadius:10,padding:"1px 7px",fontSize:10,fontWeight:600},
+  cntActive:{background:"rgba(180,140,0,0.15)"},
+  desc:{fontSize:12,color:"#888",marginBottom:8,lineHeight:1.4},
+  list:{display:"flex",flexDirection:"column",gap:6},
+  item:{borderRadius:10,border:"1.5px solid #E5E7EB",overflow:"hidden",transition:"all 0.15s"},
+  selectArea:{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",cursor:"pointer"},
+  brandDot:{width:36,height:36,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:600,color:"#fff",flexShrink:0},
+  main:{flex:1,minWidth:0},
+  carName:{fontSize:14,fontWeight:600,color:"#1a1a1a",marginBottom:1},
+  gen:{fontSize:11,color:"#999",marginBottom:4},
+  specs:{display:"flex",flexWrap:"wrap",gap:"2px 14px"},
+  spec:{fontSize:12,color:"#555"},
+  priceCol:{textAlign:"right",flexShrink:0,marginRight:8},
+  price:{fontSize:15,fontWeight:600,color:"#1a1a1a"},
+  fuelBadge:{fontSize:10,padding:"2px 8px",borderRadius:10,marginTop:3,display:"inline-block",fontWeight:500},
+  checkCircle:{width:22,height:22,borderRadius:"50%",border:"1.5px solid #D1D5DB",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.15s"},
+  ctaRow:{borderTop:"1px solid #F0F0F0",padding:"6px 14px",background:"#FAFAFA"},
+  ctaBtn:{background:"none",border:"none",padding:"4px 0",fontSize:12,color:"#1a1a1a",fontWeight:500,cursor:"pointer",textDecoration:"underline",textUnderlineOffset:"2px",fontFamily:"'Inter',sans-serif"},
+};
+
+
 
 /* ═══════════════════════════════════════════════════════════════════
    FLOATING COMPARISON TRAY
@@ -828,7 +1047,7 @@ function ADACAssistant() {
   const [selectedIds, setSelectedIds] = useState([]);   // multi-select car IDs
   const [chip,       setChip]       = useState(null);       // car in detail conversation
   const [step,       setStep]       = useState("idle");
-  const [ctx,        setCtx]        = useState({brand:null, price:null, type:null, fuel:null, minRange:null, ausstattungPrio:null, seats:null});
+  const [ctx,        setCtx]        = useState({usage:null, aufbau:null, brand:null, price:null, type:null, fuel:null, power:null, minRange:null, ausstattungPrio:null, seats:null});
   const [lastCars,   setLastCars]   = useState([]);         // last search results
   const [modal,      setModal]      = useState(false);
   const [adacPage,   setAdacPage]   = useState(false);
@@ -1118,8 +1337,8 @@ function ADACAssistant() {
       return;
     }
     if (/preisfilter|budget anpassen|anderes budget/i.test(txt)) {
-      setStep("ask_price"); setCtx(p=>({...p,price:null}));
-      addBot({text:"In welcher Preisspanne soll ich suchen?", chips:["Unter 20.000 €","20.000 € – 35.000 €","35.000 € – 50.000 €","Über 50.000 €"]});
+      setStep("ask_budget"); setCtx(p=>({...p,price:null}));
+      addBot({text:"Klar, passen wir das Budget an:", chips:["Bis 25.000 €","25.000 – 40.000 €","40.000 – 60.000 €","Über 60.000 €"]});
       return;
     }
     if (/anderen kraftstoff|kraftstoff ändern|kraftstoff wählen/i.test(txt)) {
@@ -1128,7 +1347,7 @@ function ADACAssistant() {
       return;
     }
     if (/anderen fahrzeugtyp|fahrzeugtyp ändern|anderer typ/i.test(txt)) {
-      setStep("ask_type"); setCtx(p=>({...p,type:null}));
+      setStep("ask_aufbau"); setCtx(p=>({...p,type:null}));
       addBot({text:"Welchen Fahrzeugtyp bevorzugst du?", chips:["Kombi","Van","SUV","Egal/Hauptsache praktisch"]});
       return;
     }
@@ -1209,81 +1428,137 @@ function ADACAssistant() {
       }
     }
 
-    // ── IDLE → Wizard starten (Marke merken, aber immer alle 3 Fragen stellen) ──
+    // ═══════════════════════════════════════════════════════════
+    //  V3: DIALOGISCHER TRICHTER – Nutzungskontext zuerst
+    //  Reihenfolge: Nutzung → Aufbau → Antrieb → Budget → Leistung → Marke → Ausstattung
+    // ═══════════════════════════════════════════════════════════
+
     if (curStep === "idle") {
-      const newCtx = {brand, price, type, fuel};
-      setCtx(newCtx);
-      const brandHint = brand ? ` **${brand}**` : "";
-      // Immer mit Preisspanne starten – egal ob Marke bekannt oder nicht
-      setStep("ask_price");
-      addBot({
-        text: `In welcher Preisspanne soll sich das${brandHint ? brandHint+"-Fahrzeug" : " Fahrzeug"} bewegen?`,
-        chips: ["Unter 20.000 €","20.000 € – 35.000 €","35.000 € – 50.000 €","Über 50.000 €"]
-      });
-      return;
-    }
-
-    // ── ASK_PRICE → ask type ──
-    if (curStep === "ask_price") {
-      const newCtx = {...curCtx, price: detectPrice(txt)||txt, brand: detectBrand(txt)||curCtx.brand};
-      setCtx(newCtx); setStep("ask_type");
-      addBot({text:"Welchen Fahrzeugtyp bevorzugst du? Zum Beispiel Kombi, Van, SUV oder etwas anderes?", chips:["Kombi","Van","SUV","Egal/Hauptsache praktisch"]});
-      return;
-    }
-
-    // ── ASK_TYPE → ask fuel ──
-    if (curStep === "ask_type") {
-      const newCtx = {...curCtx, type: detectType(txt)||txt};
-      setCtx(newCtx); setStep("ask_fuel");
-      addBot({text:"Welche Kraftstoffart bevorzugst du?", chips:["Benzin","Diesel","Elektro","Hybrid"]});
-      return;
-    }
-
-    // ── ASK_FUEL → show results ──
-    if (curStep === "ask_fuel") {
-      const newCtx = {...curCtx, fuel: detectFuel(txt)||txt.toLowerCase()};
-      setCtx(newCtx); setStep("results");
-      const results = filterCars(newCtx);
-      const MIN_CARDS = 5;
-      let displayCars = results;
-      let introText = "";
-      const brandStr = newCtx.brand ? `${newCtx.brand}-` : "";
-
-      if (displayCars.length >= MIN_CARDS) {
-        introText = `Hier sind ${brandStr}Fahrzeuge in deiner Preisklasse:`;
-      } else if (displayCars.length > 0 && displayCars.length < MIN_CARDS) {
-        const relaxed1 = filterCars({brand:newCtx.brand, price:newCtx.price, fuel:newCtx.fuel});
-        displayCars = relaxed1.length >= displayCars.length ? relaxed1 : displayCars;
-        if (displayCars.length < MIN_CARDS) {
-          const relaxed2 = filterCars({brand:newCtx.brand, price:newCtx.price});
-          displayCars = relaxed2.length >= displayCars.length ? relaxed2 : displayCars;
-        }
-        if (displayCars.length < MIN_CARDS && newCtx.brand) {
-          const relaxed3 = filterCars({brand:newCtx.brand});
-          displayCars = relaxed3.length >= displayCars.length ? relaxed3 : displayCars;
-        }
-        introText = `Hier sind ${brandStr}Fahrzeuge, die zu deiner Suche passen – einige ähnliche Modelle wurden ergänzt:`;
+      const dU = detectUsage(txt);
+      const dA = detectAufbau(txt);
+      const dF = detectFuel(txt);
+      const dB = detectBrand(txt);
+      const nc = {...curCtx, usage:dU, aufbau:dA, type:dA==="SUV"?"SUV":dA==="Kombi"?"Kombi":dA==="Van"?"Van":null, fuel:dF, brand:dB};
+      setCtx(nc);
+      const det = [dU,dA,dF,dB].filter(Boolean);
+      const cnt = simCount(nc);
+      if (det.length >= 1) {
+        const parts = [];
+        if (dB) parts.push("**"+dB+"**");
+        if (dA) parts.push("**"+dA+"**");
+        if (dF) parts.push("**"+(dF==="elektro"?"Elektro":dF==="hybrid"?"Hybrid":dF==="diesel"?"Diesel":"Benzin")+"**");
+        if (dU) parts.push("für **"+(usageReaction(dU,{}).split("–")[0]||"").trim()+"**");
+        const intro = "Das habe ich mitgenommen: "+parts.join(", ")+". Super, damit kann ich schon gut arbeiten!\n\n🔍 **"+fmtC(cnt)+" Treffer** in der ADAC-Datenbank – lass uns das eingrenzen.";
+        if (!dU) { setStep("ask_usage"); addBot({text:intro+"\n\nEine wichtige Frage zuerst: Wofür wird das Fahrzeug hauptsächlich genutzt?", chips:["Pendeln & Stadt","Familie & Freizeit","Langstrecke & Reisen","Gewerbe & Transport","Spaß & Sport"]}); }
+        else if (!dA) { setStep("ask_aufbau"); addBot({text:intro+"\n\n"+aufbauQuestion(nc), chips:aufbauChips(nc)}); }
+        else if (!dF) { setStep("ask_fuel"); addBot({text:intro+"\n\n"+fuelQuestion(nc), chips:fuelChips(nc)}); }
+        else { setStep("ask_budget"); addBot({text:intro+"\n\nDann lass uns noch über das Budget sprechen:", chips:budgetChips(nc)}); }
       } else {
-        // Keine Treffer → Fallback ohne Kraftstoff/Typ
-        const fallback = filterCars({brand:newCtx.brand, price:newCtx.price});
-        if (fallback.length > 0) {
-          displayCars = fallback;
-          introText = `Keine exakten Treffer gefunden – hier sind ähnliche ${brandStr}Fahrzeuge in deiner Preisklasse:`;
-        } else if (newCtx.brand) {
-          displayCars = filterCars({brand:newCtx.brand});
-          introText = `Für **${newCtx.brand}** gibt es in dieser Kombination keine Treffer – hier alle ${newCtx.brand}-Modelle:`;
-        } else {
-          addBot({text:"Leider keine passenden Fahrzeuge gefunden. Soll ich die Suche anpassen?", chips:["Neue Suche starten","Anderes Budget","Anderen Kraftstoff wählen"]});
-          setStep("idle"); setCtx({brand:null,price:null,type:null,fuel:null});
-          return;
-        }
+        setStep("ask_usage");
+        addBot({text:"Schön, dass du da bist! Ich bin dein ADAC-Fahrzeugberater und helfe dir, aus über **162.000 Modellen** genau das richtige zu finden.\n\nDamit ich dir die besten Vorschläge machen kann, stell ich dir ein paar kurze Fragen. Los geht's!\n\nWofür wird das Fahrzeug hauptsächlich genutzt?", chips:["Pendeln & Stadt","Familie & Freizeit","Langstrecke & Reisen","Gewerbe & Transport","Spaß & Sport"]});
       }
+      return;
+    }
+    if (curStep === "ask_usage") {
+      const u = detectUsage(txt) || "familie";
+      const nc = {...curCtx, usage:u}; setCtx(nc);
+      const r = usageReaction(u, nc);
+      if (!nc.aufbau) { setStep("ask_aufbau"); addBot({text:r+"\n\n"+aufbauQuestion(nc), chips:aufbauChips(nc)}); }
+      else if (!nc.fuel) { setStep("ask_fuel"); addBot({text:r+"\n\n"+fuelQuestion(nc), chips:fuelChips(nc)}); }
+      else { setStep("ask_budget"); addBot({text:r+"\n\nDann lass uns über das Budget sprechen:", chips:budgetChips(nc)}); }
+      return;
+    }
+    if (curStep === "ask_aufbau") {
+      const a = detectAufbau(txt);
+      const tMap = {SUV:"SUV",Kombi:"Kombi",Van:"Van"};
+      const nc = {...curCtx, aufbau:a, type:tMap[a]||null}; setCtx(nc);
+      const cnt = simCount(nc);
+      const r = aufbauReaction(a, nc);
+      if (!nc.fuel) { setStep("ask_fuel"); addBot({text:r+"\n\n🔍 **"+fmtC(cnt)+" Treffer** – "+fuelQuestion(nc), chips:fuelChips(nc)}); }
+      else { setStep("ask_budget"); addBot({text:r+"\n\n🔍 **"+fmtC(cnt)+" Treffer** – dann lass uns über das Budget sprechen:", chips:budgetChips(nc)}); }
+      return;
+    }
+    if (curStep === "ask_fuel") {
+      const f = detectFuel(txt);
+      const nc = {...curCtx, fuel:f}; setCtx(nc);
+      const r = fuelReaction(f, nc);
+      setStep("ask_budget");
+      addBot({text:r+"\n\nWie sieht es beim Budget aus?", chips:budgetChips(nc)});
+      return;
+    }
+    if (curStep === "ask_budget") {
+      const p = detectPrice(txt) || (/bis 25|unter 25|günstig/i.test(txt)?"Bis 25.000 €":/25.*40|mittel/i.test(txt)?"25.000 – 40.000 €":/40.*60|gehoben/i.test(txt)?"40.000 – 60.000 €":/über 60|premium|luxus/i.test(txt)?"Über 60.000 €":null);
+      const nc = {...curCtx, price:p}; setCtx(nc);
+      const cnt = simCount(nc);
+      const r = budgetReaction(p, nc);
+      setStep("ask_power");
+      addBot({text:r+"\n\n🔍 **"+fmtC(cnt)+" Treffer** – wir kommen der Sache näher! Noch eine kurze Frage zur Motorisierung:", chips:powerChips(nc)});
+      return;
+    }
+    if (curStep === "ask_power") {
+      const pw = detectPower(txt);
+      const nc = {...curCtx, power:pw}; setCtx(nc);
+      const r = powerReaction(pw, nc);
+      setStep("ask_brand");
+      addBot({text:r+"\n\nGibt es eine Marke, die dich besonders interessiert – oder soll ich markenübergreifend die besten raussuchen?", chips:["BMW","Mercedes","Volvo","VW","Toyota","Hyundai","Bin offen für alles"]});
+      return;
+    }
+    if (curStep === "ask_brand") {
+      const b = detectBrand(txt) || (/offen|egal|keine|alle/i.test(txt)?null:null);
+      const nc = {...curCtx, brand:b}; setCtx(nc);
+      const cnt = simCount(nc);
+      const r = b ? "**"+b+"** – gute Wahl, die haben aktuell einige spannende Modelle im Programm!" : "Ohne Markenbrille – so bekommst du den ehrlichsten Vergleich!";
+      setStep("ask_features");
+      addBot({text:r+"\n\n🔍 **"+fmtC(cnt)+" Treffer** – wir sind fast am Ziel! Eine letzte Frage: Gibt es ein Ausstattungsdetail, das dir besonders am Herzen liegt?", chips:featureChips(nc)});
+      return;
+    }
+    if (curStep === "ask_features") {
+      const auMap = {"sicherheit":["Notbremsassistent","Spurhalteassistent"],"komfort":["Sitzheizung","Lederausstattung","Klimaanlage"],"panoramadach":["Panoramadach"],"anhängerkupplung":["Anhängerkupplung"],"7 sitz":["7 Sitze"],"allrad":["Allradantrieb"]};
+      const key = Object.keys(auMap).find(k=>txt.toLowerCase().includes(k));
+      const prio = key ? auMap[key] : null;
+      const seats7 = /7 sitz/i.test(txt) ? "7" : null;
+      const nc = {...curCtx, ausstattungPrio:prio, seats:seats7}; setCtx(nc);
+      setStep("results");
 
-      showCarousel(displayCars, introText, {
-        brand: newCtx.brand,
-        fuel: newCtx.fuel,
-        compareActive: selectedIds.length > 0,
+      // Top Empfehlungen: exakte Treffer
+      const exact = filterCars(nc);
+      // Starke Alternativen: gelockerte Filter (ohne Ausstattung/Leistung)
+      const relaxed = filterCars({brand:nc.brand, price:nc.price, fuel:nc.fuel, type:nc.type}).filter(c => !exact.find(e=>e.id===c.id));
+      // Breitere Suche: nur Antrieb + Typ
+      const broad = filterCars({fuel:nc.fuel, type:nc.type}).filter(c => !exact.find(e=>e.id===c.id) && !relaxed.find(r=>r.id===c.id));
+      // Preistipp: günstigste aus allen passenden
+      const allMatches = [...exact, ...relaxed, ...broad];
+      const priceSorted = [...allMatches].sort((a,b)=>a.priceNum-b.priceNum);
+
+      // Tabs zusammenstellen – IMMER mindestens 7 Top Empfehlungen
+      let topPool = [...exact, ...relaxed, ...broad];
+      // Wenn immer noch zu wenig, alle Autos des passenden Typs/Fuels hinzufügen
+      if (topPool.length < 7) {
+        const extra = CAR_DB.filter(c => !topPool.find(t=>t.id===c.id));
+        topPool = [...topPool, ...extra];
+      }
+      const topCars = topPool.slice(0, Math.max(7, exact.length + 2));
+      const altCars = topPool.slice(topCars.length, topCars.length + 7);
+      const cheapCars = [...topPool].sort((a,b)=>a.priceNum-b.priceNum).slice(0, 5);
+
+      const isFamily = nc.usage==="familie";
+      const featureIntro = key
+        ? (key==="sicherheit" ? (isFamily?"Sicherheit – besonders mit Familie an Bord absolut richtig!":"Sicherheit hat Priorität – gute Entscheidung!") : "**"+key.charAt(0).toUpperCase()+key.slice(1)+"** wird berücksichtigt!")
+        : "Perfekt, ich habe jetzt ein klares Bild!";
+
+      const tabs = [
+        {icon:"⭐", label:"Top Empfehlungen", cars:topCars, desc:"Diese Modelle passen am besten zu deinem Profil."},
+      ];
+      if (altCars.length > 0) tabs.push({icon:"💡", label:"Starke Alternativen", cars:altCars, desc:"Etwas andere Modelle, die ebenfalls interessant sein könnten."});
+      if (cheapCars.length > 0) tabs.push({icon:"💰", label:"Preistipp", cars:cheapCars, desc:"Die günstigsten Optionen aus deiner Auswahl."});
+
+      addBot({
+        text: featureIntro+"\n\nVon über **162.000 Modellen** habe ich **"+allMatches.length+" passende** für dich gefunden:",
+        tabbedCars: tabs,
+        cta: "Klicke auf eine Kachel zum Auswählen, dann kannst du Modelle vergleichen.",
+        chips: ["Modelle vergleichen","Suche verfeinern","Neue Suche starten"],
       });
+      setLastCars(allMatches);
       return;
     }
 
@@ -1428,7 +1703,7 @@ function ADACAssistant() {
 
     // ── Neue Suche ──
     if (/neue suche|neu starten|zurücksetzen|nochmal von vorne/i.test(txt)) {
-      setStep("idle"); setCtx({brand:null,price:null,type:null,fuel:null,minRange:null,ausstattungPrio:null,seats:null}); setChip(null); setLastCars([]);
+      setStep("idle"); setCtx({usage:null,aufbau:null,brand:null,price:null,type:null,fuel:null,power:null,minRange:null,ausstattungPrio:null,seats:null}); setChip(null); setLastCars([]);
       suppressDeselectDialog.current = true;
       setSelectedIds([]);
       addBot({text:"Kein Problem – beschreib mir einfach, was du suchst, und ich helfe dir weiter!"});
@@ -1492,6 +1767,14 @@ function ADACAssistant() {
                         selectedIds={selectedIds}
                         onToggleSelect={toggleSelect}
                         totalCount={msg.cars.length}
+                        onShowAll={()=>setModal(true)}
+                      />
+                    )}
+                    {msg.tabbedCars?.length>0 && (
+                      <TabbedCarousel
+                        tabs={msg.tabbedCars}
+                        selectedIds={selectedIds}
+                        onToggleSelect={toggleSelect}
                         onShowAll={()=>setModal(true)}
                       />
                     )}
@@ -1667,8 +1950,7 @@ const s = {
   footerL:{color:"#666",textDecoration:"underline"},
 };
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(React.createElement(ADACAssistant));
-  </script>
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(ADACAssistant));
+</script>
 </body>
 </html>
