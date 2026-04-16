@@ -58,6 +58,57 @@ const CAR_DB = [
   { id:39, name:"Volvo XC90 T5",        gen:"2. Generation", code:"256T5",years:"2015–2025", price:"ab 47.800 €", priceNum:47800, fuel:"Benzin",       cons:"7,8–9,5 l/100km", range:"530–680 km",  type:"SUV",   fuelType:"benzin",  brand:"Volvo",    img:"https://commons.wikimedia.org/wiki/Special:FilePath/2015_Volvo_XC90_T6_AWD_Inscription,_front_9.7.19.jpg", ausstattung:["7 Sitze","Panoramadach","Sitzheizung","Lederausstattung","Isofix","Spurhalteassistent","Anhängerkupplung","360°-Kamera"] },
 ];
 
+// ── ADAC-Content: Autotest, Crashtest, Pannenstatistik, Rückrufe, Autokosten ──
+const ADAC_DATA = {
+  1:  {autotest:"2,1", crashtest:5, pannen:"gut",        rueckrufe:0, kopiM:580},
+  2:  {autotest:"1,9", crashtest:5, pannen:"befriedigend",rueckrufe:1, kopiM:610},
+  3:  {autotest:"2,4", crashtest:5, pannen:"noch keine Daten",rueckrufe:0, kopiM:650},
+  4:  {autotest:"2,2", crashtest:5, pannen:"gut",        rueckrufe:0, kopiM:590},
+  5:  {autotest:"1,8", crashtest:5, pannen:"gut",        rueckrufe:0, kopiM:620},
+  6:  {autotest:"2,0", crashtest:5, pannen:"gut",        rueckrufe:0, kopiM:680},
+  7:  {autotest:"2,1", crashtest:5, pannen:"gut",        rueckrufe:1, kopiM:560},
+  8:  {autotest:"2,3", crashtest:5, pannen:"sehr gut",   rueckrufe:0, kopiM:530},
+  9:  {autotest:"2,5", crashtest:5, pannen:"befriedigend",rueckrufe:0, kopiM:480},
+  10: {autotest:"1,9", crashtest:5, pannen:"gut",        rueckrufe:0, kopiM:650},
+  11: {autotest:"1,7", crashtest:5, pannen:"gut",        rueckrufe:1, kopiM:750},
+  12: {autotest:"2,0", crashtest:5, pannen:"sehr gut",   rueckrufe:0, kopiM:580},
+  13: {autotest:"2,2", crashtest:5, pannen:"gut",        rueckrufe:0, kopiM:510},
+  14: {autotest:"2,3", crashtest:5, pannen:"gut",        rueckrufe:0, kopiM:560},
+  15: {autotest:"2,4", crashtest:5, pannen:"gut",        rueckrufe:0, kopiM:430},
+  16: {autotest:"1,8", crashtest:5, pannen:"gut",        rueckrufe:0, kopiM:620},
+  17: {autotest:"1,6", crashtest:5, pannen:"sehr gut",   rueckrufe:0, kopiM:640},
+  18: {autotest:"2,1", crashtest:5, pannen:"sehr gut",   rueckrufe:0, kopiM:570},
+  19: {autotest:"2,3", crashtest:5, pannen:"gut",        rueckrufe:0, kopiM:660},
+  20: {autotest:"1,8", crashtest:5, pannen:"sehr gut",   rueckrufe:0, kopiM:690},
+  21: {autotest:"1,9", crashtest:5, pannen:"gut",        rueckrufe:0, kopiM:720},
+  22: {autotest:"1,7", crashtest:5, pannen:"gut",        rueckrufe:1, kopiM:820},
+  23: {autotest:"1,8", crashtest:5, pannen:"gut",        rueckrufe:0, kopiM:870},
+  24: {autotest:"2,0", crashtest:5, pannen:"noch keine Daten",rueckrufe:0, kopiM:520},
+  25: {autotest:"2,2", crashtest:5, pannen:"noch keine Daten",rueckrufe:0, kopiM:660},
+  26: {autotest:"1,6", crashtest:5, pannen:"noch keine Daten",rueckrufe:0, kopiM:950},
+  27: {autotest:"2,5", crashtest:5, pannen:"gut",        rueckrufe:0, kopiM:480},
+  28: {autotest:"1,9", crashtest:5, pannen:"noch keine Daten",rueckrufe:0, kopiM:540},
+  29: {autotest:"2,1", crashtest:5, pannen:"gut",        rueckrufe:0, kopiM:650},
+  30: {autotest:"2,2", crashtest:5, pannen:"sehr gut",   rueckrufe:0, kopiM:590},
+  31: {autotest:"2,0", crashtest:5, pannen:"sehr gut",   rueckrufe:0, kopiM:620},
+  32: {autotest:"1,7", crashtest:5, pannen:"gut",        rueckrufe:0, kopiM:710},
+  33: {autotest:"1,8", crashtest:5, pannen:"gut",        rueckrufe:0, kopiM:740},
+  34: {autotest:"2,1", crashtest:5, pannen:"gut",        rueckrufe:0, kopiM:610},
+  35: {autotest:"1,9", crashtest:5, pannen:"gut",        rueckrufe:0, kopiM:690},
+  36: {autotest:"2,3", crashtest:5, pannen:"gut",        rueckrufe:0, kopiM:570},
+  37: {autotest:"2,2", crashtest:5, pannen:"gut",        rueckrufe:0, kopiM:640},
+  38: {autotest:"2,4", crashtest:5, pannen:"sehr gut",   rueckrufe:0, kopiM:540},
+  39: {autotest:"2,6", crashtest:5, pannen:"gut",        rueckrufe:1, kopiM:700},
+};
+// Merge ADAC data into CAR_DB
+CAR_DB.forEach(c => { const d = ADAC_DATA[c.id]; if (d) Object.assign(c, d); });
+
+const PANNEN_BY_BRAND = {
+  Volvo:"sehr gut", BMW:"gut", Mercedes:"gut", VW:"gut", Toyota:"sehr gut",
+  Hyundai:"gut", Skoda:"gut", Tesla:"befriedigend", Ford:"befriedigend",
+  Kia:"gut", Renault:"befriedigend", XPeng:"noch keine Daten",
+};
+
 const PRICE_RANGES = {
   "Bis 25.000 €":        {min:0,     max:25000},
   "25.000 – 40.000 €":   {min:25000, max:40000},
@@ -219,7 +270,12 @@ function fuelReaction(f, ctx) {
 }
 function budgetReaction(p, ctx) {
   const labels = {"Bis 25.000 €":"bis 25.000 Euro","25.000 – 40.000 €":"25 bis 40 Tausend","40.000 – 60.000 €":"40 bis 60 Tausend","Über 60.000 €":"im Premium-Segment"};
-  return p ? "Budget "+( labels[p]||"notiert")+" – da gibt es "+(ctx.fuel==="elektro"?"gerade richtig spannende Elektro-Modelle!":"eine gute Auswahl!") : "Ohne festes Budget schauen wir einfach, was am besten passt.";
+  const kostenHint = ctx.fuel==="elektro"
+    ? " Gut zu wissen: Bei E-Autos sind die Gesamtkosten (ADAC Autokosten) oft niedriger als der Kaufpreis vermuten lässt – dank geringerer Wartung und Stromkosten."
+    : ctx.fuel==="diesel"
+    ? " Der ADAC Autokosten-Rechner zeigt: Bei Diesel lohnt sich der Aufpreis ab ca. 15.000 km/Jahr durch den günstigeren Verbrauch."
+    : " Tipp: Neben dem Kaufpreis lohnt sich ein Blick auf die ADAC Autokosten – dort siehst du Versicherung, Steuer und Wartung auf einen Blick.";
+  return p ? "Budget "+( labels[p]||"notiert")+" – da gibt es "+(ctx.fuel==="elektro"?"gerade richtig spannende Elektro-Modelle!":"eine gute Auswahl!")+kostenHint : "Ohne festes Budget schauen wir einfach, was am besten passt.";
 }
 function powerReaction(pw, ctx) {
   const r = {
@@ -298,26 +354,29 @@ const LogoSVG = () => (
 );
 
 /* ═══════════════════════════════════════════════════════════════════
-   WELCOME SCREEN
+   WELCOME SCREEN – 6 Expert-Karten
 ═══════════════════════════════════════════════════════════════════ */
 const FEATURES = [
-  {icon:"🚦", title:"Verkehrsmeldungen checken", desc:"Aktuelle Informationen zu Staus, Sperrungen und Verkehrslage erhalten."},
-  {icon:"⛽", title:"Tankstellensuche",           desc:"Eine Übersicht nahegelegener Tankstellen abrufen."},
-  {icon:"📄", title:"Frag den Artikel",           desc:"Fragen zu Artikeln stellen, hier am Beispiel der Kindersitz-Tests."},
+  {icon:"🚗", title:"Passendes Auto finden",     desc:"Gemeinsam im Dialog das ideale Fahrzeug ermitteln."},
+  {icon:"🛡️", title:"Crashtest abrufen",          desc:"Sicherheitsbewertung eines Fahrzeugs prüfen."},
+  {icon:"💰", title:"Autokosten berechnen",       desc:"Monatlicher Unterhalt inkl. Versicherung & Steuer."},
+  {icon:"🔧", title:"Pannenstatistik einsehen",   desc:"Zuverlässigkeit nach Marke und Modell prüfen."},
+  {icon:"🚦", title:"Verkehrsmeldungen checken",  desc:"Aktuelle Staus, Sperrungen und Verkehrslage."},
+  {icon:"⛽", title:"Tankstellensuche",            desc:"Tankstellen mit Preisvergleich in deiner Nähe."},
 ];
 
 function WelcomeScreen({onStart}) {
   return (
     <div style={ws.wrap}>
       <LogoSVG/>
-      <h1 style={ws.h1}>ADAC Assistent V3 – Fahrzeugberatung</h1>
-      <p style={ws.sub}>Aktuell umfasst mein Scope folgende Features. Probiere mich gerne aus!</p>
+      <h1 style={ws.h1}>Hallo! Ich bin dein ADAC Fahrzeugberater.</h1>
+      <p style={ws.sub}>Ich helfe dir bei der Suche nach einem Auto, bei Fragen zu einem Modell oder beim Vergleich. Was kann ich für dich tun?</p>
       <div style={ws.grid}>
         {FEATURES.map((f,i) => (
           <button key={i} style={ws.card} onClick={() => onStart(f.title)}
             onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.1)"}
             onMouseLeave={e=>e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.06)"}>
-            <span style={{fontSize:20}}>{f.icon}</span>
+            <span style={ws.icon}>{f.icon}</span>
             <div><div style={ws.ct}>{f.title}</div><div style={ws.cd}>{f.desc}</div></div>
           </button>
         ))}
@@ -327,12 +386,13 @@ function WelcomeScreen({onStart}) {
 }
 const ws = {
   wrap:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"40px 48px",textAlign:"center",gap:0},
-  h1:{fontSize:38,fontWeight:700,fontFamily:"'Zilla Slab',serif",color:"#1a1a1a",margin:"28px 0 16px",maxWidth:560,lineHeight:1.2},
-  sub:{fontSize:16,color:"#666",margin:"0 0 36px",maxWidth:500},
-  grid:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,maxWidth:760,width:"100%"},
-  card:{background:"#fff",border:"1px solid #E5E7EB",borderRadius:10,padding:"16px",display:"flex",alignItems:"flex-start",gap:12,textAlign:"left",cursor:"pointer",transition:"box-shadow 0.2s",boxShadow:"0 1px 4px rgba(0,0,0,0.06)"},
-  ct:{fontSize:14,fontWeight:700,color:"#1a1a1a",marginBottom:4},
-  cd:{fontSize:12,color:"#666",lineHeight:1.5},
+  h1:{fontSize:34,fontWeight:700,fontFamily:"'Zilla Slab',serif",color:"#1a1a1a",margin:"28px 0 12px",maxWidth:560,lineHeight:1.2},
+  sub:{fontSize:15,color:"#666",margin:"0 0 32px",maxWidth:500,lineHeight:1.5},
+  grid:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,maxWidth:760,width:"100%"},
+  card:{background:"#fff",border:"1px solid #E5E7EB",borderRadius:10,padding:"14px",display:"flex",alignItems:"flex-start",gap:12,textAlign:"left",cursor:"pointer",transition:"box-shadow 0.2s",boxShadow:"0 1px 4px rgba(0,0,0,0.06)"},
+  icon:{fontSize:20,width:38,height:38,borderRadius:10,background:"#FFFBEA",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0},
+  ct:{fontSize:13,fontWeight:700,color:"#1a1a1a",marginBottom:3},
+  cd:{fontSize:11,color:"#666",lineHeight:1.5},
 };
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -471,6 +531,7 @@ function TabbedCarousel({tabs, selectedIds, onToggleSelect, onShowAll}) {
                 <div style={tl.priceCol}>
                   <div style={tl.price}>{c.price.replace("ab ","")}</div>
                   <div style={{...tl.fuelBadge, background:fBg, color:fCol}}>{c.fuel}</div>
+                  {c.autotest && <div style={tl.autotestBadge}>ADAC {c.autotest}</div>}
                 </div>
                 <div style={{...tl.checkCircle, background:isSelected?"#FFCC00":"transparent", borderColor:isSelected?"#FFCC00":"#D1D5DB"}}>
                   {isSelected && <CheckIcon/>}
@@ -510,6 +571,7 @@ const tl = {
   checkCircle:{width:22,height:22,borderRadius:"50%",border:"1.5px solid #D1D5DB",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.15s"},
   ctaRow:{borderTop:"1px solid #F0F0F0",padding:"6px 14px",background:"#FAFAFA"},
   ctaBtn:{background:"none",border:"none",padding:"4px 0",fontSize:12,color:"#1a1a1a",fontWeight:500,cursor:"pointer",textDecoration:"underline",textUnderlineOffset:"2px",fontFamily:"'Inter',sans-serif"},
+  autotestBadge:{fontSize:10,padding:"2px 8px",borderRadius:10,marginTop:3,display:"inline-block",fontWeight:600,background:"#FFFBEA",color:"#92750a",border:"1px solid #FFCC00"},
 };
 
 
@@ -570,6 +632,11 @@ const COMPARE_ROWS=[
   {label:"Kraftstoff", fn:c=>c.fuel,    best:null},
   {label:"Verbrauch",  fn:c=>c.cons,    best:null},
   {label:"Reichweite", fn:c=>c.range,   best:"max"},
+  {label:"ADAC Autotest",  fn:c=>c.autotest ? "Note "+c.autotest : "–",  best:"min_note"},
+  {label:"Crashtest",  fn:c=>c.crashtest ? c.crashtest+"★" : "–",  best:null},
+  {label:"Pannenstatistik", fn:c=>c.pannen||"–", best:null},
+  {label:"Rückrufe",   fn:c=>c.rueckrufe===0 ? "✅ Keine" : "⚠️ "+c.rueckrufe, best:null},
+  {label:"Autokosten/Monat", fn:c=>c.kopiM ? c.kopiM+" €" : "–", best:"min_kopi"},
   {label:"Baujahr",    fn:c=>c.years,   best:null},
   {label:"Typ",        fn:c=>c.type,    best:null},
 ];
@@ -603,18 +670,21 @@ function ComparisonTable({cars}) {
           </thead>
           <tbody>
             {COMPARE_ROWS.map((row,i)=>{
-              const bestVal = row.best==="min"
-                ? cars.reduce((a,b)=>a.priceNum<b.priceNum?a:b).priceNum
-                : null;
+              let bestId = null;
+              if (row.best==="min") bestId = cars.reduce((a,b)=>a.priceNum<b.priceNum?a:b).id;
+              else if (row.best==="max") { const vals = cars.map(c=>({id:c.id,v:parseInt(c.range)||0})); bestId = vals.reduce((a,b)=>a.v>b.v?a:b).id; }
+              else if (row.best==="min_note") { const vals = cars.filter(c=>c.autotest).map(c=>({id:c.id,v:parseFloat(c.autotest.replace(",","."))})); if(vals.length>0) bestId = vals.reduce((a,b)=>a.v<b.v?a:b).id; }
+              else if (row.best==="min_kopi") { const vals = cars.filter(c=>c.kopiM).map(c=>({id:c.id,v:c.kopiM})); if(vals.length>0) bestId = vals.reduce((a,b)=>a.v<b.v?a:b).id; }
+              const bestLabels = {min:"Günstigster",max:"Beste Reichweite",min_note:"Bester Autotest",min_kopi:"Günstigster Unterhalt"};
               return (
                 <tr key={i} style={{background:i%2===0?"#FAFAFA":"#fff"}}>
                   <td style={ct.tdLabel}>{row.label}</td>
                   {cars.map(c=>{
-                    const isBest = row.best==="min" && c.priceNum===bestVal;
+                    const isBest = bestId && c.id===bestId;
                     return (
                       <td key={c.id} style={{...ct.tdVal,background:isBest?"#FFFBEA":"inherit"}}>
                         {row.fn(c)}
-                        {isBest&&<div style={ct.bestBadge}>Günstigster</div>}
+                        {isBest&&<div style={ct.bestBadge}>{bestLabels[row.best]||"Bester Wert"}</div>}
                       </td>
                     );
                   })}
@@ -1141,6 +1211,119 @@ function ADACAssistant() {
 
   const process = (txt, curStep, curCtx, curChip) => {
 
+    // ══════════════════════════════════════════════════════════════
+    //  EINSTIEGS-ROUTING: Welcome-Karten → passender Flow
+    // ══════════════════════════════════════════════════════════════
+    if (/passendes auto finden/i.test(txt) && curStep === "idle") {
+      setStep("ask_intent");
+      addBot({text:"Schön, dass du auf der Suche bist! Hast du schon ein bestimmtes Modell im Kopf, oder sollen wir gemeinsam das passende finden?", chips:["Ich weiß schon welches","Lass uns gemeinsam suchen"]});
+      return;
+    }
+    if (curStep === "ask_intent") {
+      if (/weiß schon|bestimmtes|konkretes|ich kenne/i.test(txt)) {
+        setStep("ask_model_detail");
+        addBot({text:"Super! Welches Modell interessiert dich? Nenne mir einfach Marke und Modell.", chips:["Tesla Model Y","VW ID.4","BMW iX1","Volvo XC40","Hyundai IONIQ 5"]});
+        return;
+      }
+      // "Lass uns gemeinsam suchen" oder Freitext → geführte Suche
+      setStep("idle");
+      addBot({text:"Alles klar, lass uns gemeinsam suchen! Was für ein Auto schwebt dir vor?", chips:["Familienwagen","Sportwagen","Pendlerauto","Gewerbefahrzeug","Ich bin noch unsicher"]});
+      return;
+    }
+    if (curStep === "ask_model_detail") {
+      const match = CAR_DB.find(c => txt.toLowerCase().includes(c.name.toLowerCase()) || txt.toLowerCase().includes(c.brand.toLowerCase()));
+      if (match) {
+        setChip(match); setStep("detail");
+        const crashStars = match.crashtest ? match.crashtest + " von 5 Sternen" : "gute Bewertung";
+        const rueckrufTxt = match.rueckrufe > 0 ? "⚠️ "+match.rueckrufe+" offene(r) Rückruf(e)" : "✅ Keine offenen Rückrufe";
+        addBot({text:`Hier ist dein Überblick zum **${match.name}**:\n\n• **Preis:** ${match.price}\n• **Antrieb:** ${match.fuel} · Verbrauch ${match.cons}\n• **Reichweite:** ${match.range}\n• **ADAC Autotest:** Note ${match.autotest||"–"}\n• **Crashtest:** ${crashStars}\n• **Pannenstatistik:** ${match.pannen||"–"}\n• **Rückrufe:** ${rueckrufTxt}\n• **Autokosten:** ca. ${match.kopiM||"–"} €/Monat\n\nWozu möchtest du mehr erfahren?`, chips:["Motorisierung","Ausstattung","Sicherheit & Crashtest","ADAC Autotest","Pannenstatistik","Ähnliche Modelle finden"]});
+        return;
+      }
+      addBot({text:"Das Modell habe ich leider nicht in meiner Datenbank gefunden. Versuche es mit einem anderen Namen oder lass uns gemeinsam suchen.", chips:["Lass uns gemeinsam suchen","Tesla Model Y","VW ID.4","BMW iX1"]});
+      return;
+    }
+    // ── Crashtest-Direkteinstieg ──
+    if (/crashtest abrufen/i.test(txt) && curStep === "idle") {
+      setStep("ask_model_crash");
+      addBot({text:"Für welches Fahrzeug möchtest du den Crashtest abrufen? Nenne mir Marke und Modell.", chips:["Tesla Model Y","VW ID.4","BMW iX1","Volvo XC40","Hyundai IONIQ 5"]});
+      return;
+    }
+    if (curStep === "ask_model_crash") {
+      const match = CAR_DB.find(c => txt.toLowerCase().includes(c.name.toLowerCase()) || txt.toLowerCase().includes(c.brand.toLowerCase()));
+      if (match) {
+        setChip(match); setStep("detail");
+        const stars = match.crashtest ? match.crashtest+" von 5 Sternen" : "gute Bewertung";
+        const rueckrufTxt = match.rueckrufe > 0 ? "\n\n⚠️ **Achtung:** Für dieses Modell gibt es aktuell **"+match.rueckrufe+" offene(n) Rückruf(e)**." : "\n\n✅ Aktuell sind **keine offenen Rückrufe** bekannt.";
+        addBot({text:`**${match.name}** – Crashtest-Ergebnis:\n\n🛡️ Euro NCAP: **${stars}**\n\nSerienmäßige Sicherheitsausstattung: Notbremsassistent, Spurhalteassistent, Müdigkeitserkennung und Verkehrszeichenerkennung.${rueckrufTxt}`, adacTip:{title:"ADAC Crashtest-Datenbank", text:"Detaillierte Ergebnisse zu Insassenschutz, Kindersicherheit, Fußgängerschutz und Assistenzsysteme.", cta:"Alle Crashtests auf adac.de", url:"https://www.adac.de/rund-ums-fahrzeug/autokatalog/crashtest/"}, chips:["Autokosten berechnen","Pannenstatistik","Ausstattung","Ähnliche Modelle finden"]});
+        return;
+      }
+      addBot({text:"Das Modell habe ich nicht gefunden. Versuche einen anderen Namen.", chips:["Tesla Model Y","VW ID.4","BMW iX1","Volvo XC40"]});
+      return;
+    }
+    // ── Autokosten-Direkteinstieg ──
+    if (/autokosten berechnen/i.test(txt) && (curStep === "idle" || curStep === "detail")) {
+      if (curChip) {
+        const c = curChip;
+        addBot({text:`**${c.name}** – ADAC Autokosten:\n\n💰 Monatlicher Gesamtunterhalt: ca. **${c.kopiM||"–"} €/Monat**\n\nDas beinhaltet: Wertverlust, Versicherung (Haftpflicht+Vollkasko), Kfz-Steuer, Wartung & Reparatur, ${c.fuelType==="elektro"?"Strom":"Kraftstoff"} und Reifenverschleiß.`, adacTip:{title:"ADAC Autokosten-Rechner", text:"Vergleiche die monatlichen Kosten verschiedener Modelle – oft überraschend anders als erwartet.", cta:"Zum Autokosten-Rechner", url:"https://www.adac.de/rund-ums-fahrzeug/auto-kaufen-verkaufen/autokosten/"}, chips:["Crashtest abrufen","Pannenstatistik","Ausstattung","Ähnliche Modelle finden"]});
+        return;
+      }
+      setStep("ask_model_kosten");
+      addBot({text:"Für welches Fahrzeug möchtest du die Autokosten berechnen?", chips:["Tesla Model Y","VW ID.4","BMW iX1","Volvo XC40","Hyundai IONIQ 5"]});
+      return;
+    }
+    if (curStep === "ask_model_kosten") {
+      const match = CAR_DB.find(c => txt.toLowerCase().includes(c.name.toLowerCase()) || txt.toLowerCase().includes(c.brand.toLowerCase()));
+      if (match) {
+        setChip(match); setStep("detail");
+        addBot({text:`**${match.name}** – ADAC Autokosten:\n\n💰 Monatlicher Gesamtunterhalt: ca. **${match.kopiM||"–"} €/Monat**\n\n(Wertverlust, Versicherung, Steuer, Wartung, ${match.fuelType==="elektro"?"Strom":"Kraftstoff"}, Reifen)`, adacTip:{title:"ADAC Autokosten-Rechner", text:"Vergleiche die monatlichen Kosten verschiedener Modelle auf adac.de.", cta:"Zum Autokosten-Rechner", url:"https://www.adac.de/rund-ums-fahrzeug/auto-kaufen-verkaufen/autokosten/"}, chips:["Crashtest abrufen","Pannenstatistik","Ausstattung","Ähnliche Modelle finden"]});
+        return;
+      }
+      addBot({text:"Modell nicht gefunden. Versuche einen anderen Namen.", chips:["Tesla Model Y","VW ID.4","BMW iX1","Volvo XC40"]});
+      return;
+    }
+    // ── Pannenstatistik-Direkteinstieg ──
+    if (/pannenstatistik einsehen/i.test(txt) && (curStep === "idle" || curStep === "detail")) {
+      if (curChip) {
+        const c = curChip;
+        const pannen = c.pannen || PANNEN_BY_BRAND[c.brand] || "keine Daten";
+        addBot({text:`**${c.name}** – ADAC Pannenstatistik:\n\n🔧 Bewertung: **${pannen}**\n\nDie häufigsten Pannenursachen bei ${c.brand}: Batterie- und Elektronikprobleme. Die Statistik basiert auf über 3,5 Mio. ADAC-Pannenhilfeeinsätzen pro Jahr.`, adacTip:{title:"ADAC Pannenstatistik", text:"Vollständige Auswertung nach Marke, Modell und Baujahr auf adac.de.", cta:"Zur Pannenstatistik", url:"https://www.adac.de/rund-ums-fahrzeug/unfall-schaden-panne/pannenstatistik/"}, chips:["Crashtest abrufen","Autokosten berechnen","Ausstattung","Ähnliche Modelle finden"]});
+        return;
+      }
+      setStep("ask_model_pannen");
+      addBot({text:"Für welches Fahrzeug oder welche Marke möchtest du die Pannenstatistik sehen?", chips:["Volvo","BMW","VW","Toyota","Tesla","Hyundai"]});
+      return;
+    }
+    if (curStep === "ask_model_pannen") {
+      const matchCar = CAR_DB.find(c => txt.toLowerCase().includes(c.name.toLowerCase()));
+      const matchBrand = detectBrand(txt);
+      if (matchCar) {
+        setChip(matchCar); setStep("detail");
+        const pannen = matchCar.pannen || PANNEN_BY_BRAND[matchCar.brand] || "keine Daten";
+        addBot({text:`**${matchCar.name}** – Pannenstatistik: **${pannen}**\n\nHäufigste Ursachen bei ${matchCar.brand}: Batterie- und Elektronikprobleme.`, adacTip:{title:"ADAC Pannenstatistik", text:"Detaillierte Auswertung auf adac.de.", cta:"Zur Pannenstatistik", url:"https://www.adac.de/rund-ums-fahrzeug/unfall-schaden-panne/pannenstatistik/"}, chips:["Crashtest abrufen","Autokosten berechnen","Ähnliche Modelle finden"]});
+        return;
+      }
+      if (matchBrand) {
+        const pannen = PANNEN_BY_BRAND[matchBrand] || "keine Daten";
+        addBot({text:`**${matchBrand}** – ADAC Pannenstatistik: **${pannen}**\n\nDie Bewertung basiert auf der Häufigkeit von Pannenhilfeeinsätzen im Verhältnis zum Fahrzeugbestand. Möchtest du ein konkretes ${matchBrand}-Modell ansehen?`, chips:CAR_DB.filter(c=>c.brand===matchBrand).slice(0,4).map(c=>c.name).concat(["Passendes Auto finden"])});
+        return;
+      }
+      addBot({text:"Die Marke oder das Modell habe ich nicht gefunden.", chips:["Volvo","BMW","VW","Toyota","Tesla","Hyundai"]});
+      return;
+    }
+    // ── Ähnliche Modelle finden (aus Detail heraus) ──
+    if (/ähnliche modelle finden/i.test(txt) && curChip) {
+      setStep("idle"); setChip(null);
+      const c = curChip;
+      const newCtx = {...curCtx, fuel:c.fuelType, type:c.type, brand:null};
+      setCtx(newCtx);
+      addBot({text:`Du suchst etwas Ähnliches wie den **${c.name}**? Lass uns das gemeinsam eingrenzen!`, chips:["Lass uns gemeinsam suchen"]});
+      return;
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    //  BESTEHENDE FLOWS (Vergleich, Carousel, Dialog etc.)
+    // ══════════════════════════════════════════════════════════════
+
     // ── Dialogischer Kriterien-Vergleich (wenn ≥2 Fahrzeuge ausgewählt) ──
     const selCars = selectedIds.map(id=>CAR_DB.find(c=>c.id===id)).filter(Boolean);
     if (selCars.length >= 2) {
@@ -1363,6 +1546,10 @@ function ADACAssistant() {
     const fuel  = detectFuel(txt)  || curCtx.fuel;
 
     // ── Thematic off-topic questions (always answer) ──
+    if (/autokosten.*berechnen|autokosten.*rechner|💰.*autokosten/i.test(txt)) {
+      addBot({text:"Gute Idee! Der **ADAC Autokosten-Rechner** zeigt dir die monatlichen Gesamtkosten für jedes Modell – inklusive Wertverlust, Versicherung, Steuer, Wartung und Kraftstoff.", adacTip:{title:"ADAC Autokosten", text:"Vergleiche die tatsächlichen monatlichen Kosten verschiedener Modelle – oft überraschend anders als der Kaufpreis vermuten lässt.", cta:"Zum Autokosten-Rechner", url:"https://www.adac.de/rund-ums-fahrzeug/auto-kaufen-verkaufen/autokosten/"}, chips:["Sparsam & effizient","Alltagstauglich","Sportlich","Ist mir nicht so wichtig"]});
+      return;
+    }
     if (/spritpreis|tankstelle|tankstellen|kindersitz/i.test(txt)) {
       if (/spritpreis/i.test(txt)) { addBot({text:"Aktuelle Spritpreise findest du direkt beim ADAC: adac.de/kraftstoffpreise – dort wird der Durchschnittspreis täglich aktualisiert."}); return; }
       if (/tankstelle/i.test(txt)) { addBot({text:"Für Tankstellen in deiner Nähe empfehle ich die ADAC-Tankstellensuche: adac.de/tankstellen – mit Preisvergleich in Echtzeit."}); return; }
@@ -1385,15 +1572,30 @@ function ADACAssistant() {
         return;
       }
       if (/preis|kosten|finanzierung|leasing/i.test(txt)) {
-        addBot({text:`Der **${c.name}** ist ${c.price} erhältlich. Für aktuelle Leasing- und Finanzierungsangebote empfehle ich einen Blick auf adac.de/fahrzeugwelt – dort gibt es geprüfte Konditionen direkt vom ADAC.`, chips:["Motorisierung","Ausstattung","Verbrauch","Sicherheitsbewertung"]});
+        const kostenInfo = c.kopiM ? `\n\nLaut **ADAC Autokosten** liegt der monatliche Gesamtunterhalt bei ca. **${c.kopiM} €** (inkl. Wertverlust, Versicherung, Wartung und Kraftstoff).` : "";
+        addBot({text:`Der **${c.name}** ist ${c.price} erhältlich.${kostenInfo}\n\nFür aktuelle Leasing- und Finanzierungsangebote empfehle ich adac.de/fahrzeugwelt.`, chips:["Motorisierung","Ausstattung","Verbrauch","Sicherheitsbewertung"]});
         return;
       }
       if (/sicherheit|ncap|crash/i.test(txt)) {
-        addBot({text:`Der **${c.name}** hat beim Euro NCAP-Crashtest exzellente Bewertungen erhalten und bietet serienmäßig: Notbremsassistent, Spurhalteassistent, Müdigkeitserkennung und Verkehrszeichenerkennung.`, chips:["Motorisierung","Ausstattung","Verbrauch","Preis"]});
+        const stars = c.crashtest ? "**"+c.crashtest+" von 5 Sternen**" : "eine gute Bewertung";
+        const rueckrufInfo = c.rueckrufe > 0 ? "\n\n⚠️ **Hinweis:** Für dieses Modell gibt es aktuell **"+c.rueckrufe+" offene(n) Rückruf(e)**. Details findest du auf adac.de/rueckrufe." : "\n\n✅ Aktuell sind **keine offenen Rückrufe** für dieses Modell bekannt.";
+        const isFamily = ctx.usage === "familie";
+        const familyHint = isFamily ? " Besonders wichtig für dich als Familienfahrer!" : "";
+        addBot({text:`Der **${c.name}** hat im Euro NCAP-Crashtest ${stars} erreicht.${familyHint}\n\nSerienmäßige Sicherheitsausstattung: Notbremsassistent, Spurhalteassistent, Müdigkeitserkennung und Verkehrszeichenerkennung.${rueckrufInfo}`, chips:["Motorisierung","Ausstattung","Verbrauch","Preis","Pannenstatistik"]});
+        return;
+      }
+      if (/panne|pannen|zuverlässig/i.test(txt)) {
+        const pannen = c.pannen || PANNEN_BY_BRAND[c.brand] || "keine Daten";
+        addBot({text:`In der **ADAC-Pannenstatistik** schneidet der **${c.name}** mit **${pannen}** ab.\n\nDie häufigsten Pannenursachen bei ${c.brand} sind Batterie- und Elektronikprobleme. Auf adac.de/pannenstatistik findest du die vollständige Auswertung nach Baujahr und Modell.`, chips:["Motorisierung","Ausstattung","Verbrauch","Preis","Sicherheit & Crashtest","ADAC Autotest","Pannenstatistik"]});
+        return;
+      }
+      if (/autotest|test.*ergebnis|adac.*note/i.test(txt)) {
+        const note = c.autotest || "–";
+        addBot({text:`Der **${c.name}** hat im ADAC Autotest die Note **${note}** erhalten.\n\nDer Test umfasst Karosserie, Innenraum, Komfort, Motor, Fahreigenschaften, Sicherheit und Umwelt. Den vollständigen Testbericht findest du auf adac.de/autotest.`, chips:["Motorisierung","Ausstattung","Verbrauch","Preis","Sicherheit & Crashtest","ADAC Autotest","Pannenstatistik"]});
         return;
       }
       if (/ja|mehr|info|weiter/i.test(txt)) {
-        addBot({text:`Super! Zu welchem Bereich möchtest du mehr wissen? Zum Beispiel Motorisierung, Ausstattung, Verbrauch, Preis oder etwas anderes?`, chips:["Motorisierung","Ausstattung","Verbrauch","Preis","Sicherheitsbewertung"]});
+        addBot({text:`Super! Zu welchem Bereich möchtest du mehr wissen? Zum Beispiel Motorisierung, Ausstattung, Verbrauch, Preis oder etwas anderes?`, chips:["Motorisierung","Ausstattung","Verbrauch","Preis","Sicherheit & Crashtest","ADAC Autotest","Pannenstatistik"]});
         return;
       }
     }
@@ -1490,9 +1692,15 @@ function ADACAssistant() {
       const p = detectPrice(txt) || (/bis 25|unter 25|günstig/i.test(txt)?"Bis 25.000 €":/25.*40|mittel/i.test(txt)?"25.000 – 40.000 €":/40.*60|gehoben/i.test(txt)?"40.000 – 60.000 €":/über 60|premium|luxus/i.test(txt)?"Über 60.000 €":null);
       const nc = {...curCtx, price:p}; setCtx(nc);
       const cnt = simCount(nc);
-      const r = budgetReaction(p, nc);
+      const budgetLabel = p ? ({"Bis 25.000 €":"bis 25.000 Euro","25.000 – 40.000 €":"25 bis 40 Tausend","40.000 – 60.000 €":"40 bis 60 Tausend","Über 60.000 €":"im Premium-Segment"}[p]||"notiert") : "flexibel";
+      const budgetText = p ? "Budget "+budgetLabel+" – da gibt es "+(nc.fuel==="elektro"?"richtig spannende Elektro-Modelle!":"eine gute Auswahl!") : "Flexibles Budget – da bleiben viele Türen offen.";
+      const kostenTip = nc.fuel==="elektro"
+        ? {title:"ADAC Autokosten-Tipp", text:"Bei E-Autos sind die monatlichen Gesamtkosten oft niedriger als erwartet – dank geringerer Wartung und Stromkosten.", cta:"Autokosten-Rechner öffnen", url:"https://www.adac.de/rund-ums-fahrzeug/auto-kaufen-verkaufen/autokosten/"}
+        : nc.fuel==="diesel"
+        ? {title:"ADAC Autokosten-Tipp", text:"Bei Diesel lohnt sich der Aufpreis ab ca. 15.000 km/Jahr. Der ADAC Autokosten-Rechner zeigt dir den Break-even.", cta:"Autokosten-Rechner öffnen", url:"https://www.adac.de/rund-ums-fahrzeug/auto-kaufen-verkaufen/autokosten/"}
+        : {title:"ADAC Autokosten-Tipp", text:"Neben dem Kaufpreis zählen Versicherung, Steuer, Wartung und Kraftstoff. Der ADAC rechnet das für jedes Modell durch.", cta:"Autokosten-Rechner öffnen", url:"https://www.adac.de/rund-ums-fahrzeug/auto-kaufen-verkaufen/autokosten/"};
       setStep("ask_power");
-      addBot({text:r+"\n\n🔍 **"+fmtC(cnt)+" Treffer** – wir kommen der Sache näher! Noch eine kurze Frage zur Motorisierung:", chips:powerChips(nc)});
+      addBot({text:budgetText+"\n\n🔍 **"+fmtC(cnt)+" Treffer** – wir kommen der Sache näher!", adacTip:kostenTip, text2:"Noch eine kurze Frage zur Motorisierung:", chips:[...powerChips(nc), "💰 Autokosten berechnen"]});
       return;
     }
     if (curStep === "ask_power") {
@@ -1507,7 +1715,9 @@ function ADACAssistant() {
       const b = detectBrand(txt) || (/offen|egal|keine|alle/i.test(txt)?null:null);
       const nc = {...curCtx, brand:b}; setCtx(nc);
       const cnt = simCount(nc);
-      const r = b ? "**"+b+"** – gute Wahl, die haben aktuell einige spannende Modelle im Programm!" : "Ohne Markenbrille – so bekommst du den ehrlichsten Vergleich!";
+      const pannen = b ? PANNEN_BY_BRAND[b] : null;
+      const pannenHint = pannen && pannen !== "noch keine Daten" ? " Laut ADAC-Pannenstatistik schneidet "+b+" **"+pannen+"** ab." : "";
+      const r = b ? "**"+b+"** – gute Wahl, die haben aktuell einige spannende Modelle im Programm!"+pannenHint : "Ohne Markenbrille – so bekommst du den ehrlichsten Vergleich!";
       setStep("ask_features");
       addBot({text:r+"\n\n🔍 **"+fmtC(cnt)+" Treffer** – wir sind fast am Ziel! Eine letzte Frage: Gibt es ein Ausstattungsdetail, das dir besonders am Herzen liegt?", chips:featureChips(nc)});
       return;
@@ -1567,7 +1777,7 @@ function ADACAssistant() {
       const match = CAR_DB.find(c => txt.toLowerCase().includes(c.name.toLowerCase()) || txt.includes(`(${c.code})`));
       if (match) {
         setChip(match); setStep("detail");
-        addBot({text:`Du hast den **${match.name} ${match.gen} (${match.code})** ausgewählt. Möchtest du mehr Details zu diesem Modell erfahren, z.B. zu Motorisierung, Ausstattung, Verbrauch oder Preis? Stelle gerne eine gezielte Frage oder sage, welche Informationen dich interessieren!`, chips:["Motorisierung","Ausstattung","Verbrauch","Preis","Sicherheitsbewertung"]});
+        addBot({text:`Du hast den **${match.name} ${match.gen} (${match.code})** ausgewählt. Möchtest du mehr Details zu diesem Modell erfahren, z.B. zu Motorisierung, Ausstattung, Verbrauch oder Preis? Stelle gerne eine gezielte Frage oder sage, welche Informationen dich interessieren!`, chips:["Motorisierung","Ausstattung","Verbrauch","Preis","Sicherheit & Crashtest","ADAC Autotest","Pannenstatistik"]});
         return;
       }
     }
@@ -1760,6 +1970,17 @@ function ADACAssistant() {
                   </div>
                   <div style={s.botBody}>
                     {msg.text && <p style={s.botTxt}>{bold(msg.text)}</p>}
+                    {msg.adacTip && (
+                      <div style={s.adacTip}>
+                        <div style={s.adacTipHeader}>
+                          <span style={s.adacTipLogo}>ADAC</span>
+                          <span style={s.adacTipTitle}>{msg.adacTip.title}</span>
+                        </div>
+                        <div style={s.adacTipText}>{msg.adacTip.text}</div>
+                        <a href={msg.adacTip.url} target="_blank" rel="noreferrer" style={s.adacTipCta}>{msg.adacTip.cta} →</a>
+                      </div>
+                    )}
+                    {msg.text2 && <p style={s.botTxt}>{bold(msg.text2)}</p>}
                     {msg.tip  && <div style={s.tip}><span>💡</span><span style={{marginLeft:8,fontSize:13,color:"#444"}}>{msg.tip}</span></div>}
                     {msg.cars?.length>0 && (
                       <CarCarousel
@@ -1842,7 +2063,7 @@ function ADACAssistant() {
           addUser(`${c.name} ${c.gen} (${c.code})`);
           setTyping(true);
           setTimeout(()=>{
-            addBot({text:`Du hast den **${c.name} ${c.gen} (${c.code})** ausgewählt. Möchtest du mehr Details erfahren?`, chips:["Motorisierung","Ausstattung","Verbrauch","Preis","Sicherheitsbewertung"]});
+            addBot({text:`Du hast den **${c.name} ${c.gen} (${c.code})** ausgewählt. Möchtest du mehr Details erfahren?`, chips:["Motorisierung","Ausstattung","Verbrauch","Preis","Sicherheit & Crashtest","ADAC Autotest","Pannenstatistik"]});
             setTyping(false);
           },600);
         }}
@@ -1859,7 +2080,7 @@ function ADACAssistant() {
           addUser(`${c.name} ${c.gen} (${c.code})`);
           setTyping(true);
           setTimeout(()=>{
-            addBot({text:`Du hast den **${c.name} ${c.gen} (${c.code})** auf adac.de ausgewählt. Möchtest du mehr Details erfahren?`, chips:["Motorisierung","Ausstattung","Verbrauch","Preis","Sicherheitsbewertung"]});
+            addBot({text:`Du hast den **${c.name} ${c.gen} (${c.code})** auf adac.de ausgewählt. Möchtest du mehr Details erfahren?`, chips:["Motorisierung","Ausstattung","Verbrauch","Preis","Sicherheit & Crashtest","ADAC Autotest","Pannenstatistik"]});
             setTyping(false);
           },600);
         }}
@@ -1948,6 +2169,12 @@ const s = {
   sendBtn:{background:"transparent",border:"none",cursor:"pointer",display:"flex",alignItems:"center",padding:0,flexShrink:0},
   footer:{textAlign:"center",padding:"10px 24px 14px",fontSize:11,color:"#aaa",borderTop:"1px solid #F3F3F3"},
   footerL:{color:"#666",textDecoration:"underline"},
+  adacTip:{background:"#FFFBEA",border:"1px solid #FFCC00",borderRadius:10,padding:"12px 14px",marginBottom:12,marginTop:8},
+  adacTipHeader:{display:"flex",alignItems:"center",gap:8,marginBottom:6},
+  adacTipLogo:{background:"#FFCC00",color:"#1a1a1a",fontSize:10,fontWeight:700,padding:"2px 6px",borderRadius:4},
+  adacTipTitle:{fontSize:13,fontWeight:600,color:"#1a1a1a"},
+  adacTipText:{fontSize:12,color:"#555",lineHeight:1.5,marginBottom:8},
+  adacTipCta:{fontSize:12,fontWeight:600,color:"#1a1a1a",textDecoration:"none",background:"#FFCC00",padding:"6px 14px",borderRadius:6,display:"inline-block"},
 };
 
 ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(ADACAssistant));
